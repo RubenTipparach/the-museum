@@ -18,5 +18,11 @@ Game systems are prototyped as interactive pages and approved before they are bu
 (CLAUDE.md section 3).
 
 ```sh
-./scripts/check-style.sh   # the one check that exists today
+./scripts/check-style.sh     # no em or en dashes
+./scripts/render-proof.sh    # the engine installs, compiles C#, and draws a lit frame here
+python3 tools/render_doc.py  # regenerate docs/ARCHITECTURE.html from the Markdown
 ```
+
+`docs/ARCHITECTURE.html` is the review copy of the architecture document, published as
+an artifact at https://claude.ai/code/artifact/7b5d842a-a958-4a48-90a4-29934fa41da1. It
+is a build product of the Markdown: regenerate it, never edit it.
