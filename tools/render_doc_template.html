@@ -80,6 +80,13 @@
   .rail .tag { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; color: var(--spot); letter-spacing: .04em; }
 
   main { max-width: 70ch; padding-top: 28px; }
+  .doc + .doc { margin-top: 96px; }
+  .docmark {
+    display: block; padding-bottom: 10px; margin-bottom: 26px;
+    border-bottom: 2px solid var(--spot); color: var(--spot);
+  }
+  .rail .railgroup { display: block; margin: 18px 0 6px; color: var(--ink-soft); }
+  .rail .railgroup:first-child { margin-top: 0; }
   main h2 {
     font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; font-size: 34px; line-height: 1.15;
     margin: 64px 0 14px; padding-top: 18px; border-top: 1px solid var(--rule); text-wrap: balance;
@@ -126,7 +133,14 @@
     .rail { position: static; max-height: none; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
     .rail a { grid-template-columns: 52px 1fr; }
     .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    main h2 { font-size: 28px; }
+    .doc + .doc { margin-top: 96px; }
+  .docmark {
+    display: block; padding-bottom: 10px; margin-bottom: 26px;
+    border-bottom: 2px solid var(--spot); color: var(--spot);
+  }
+  .rail .railgroup { display: block; margin: 18px 0 6px; color: var(--ink-soft); }
+  .rail .railgroup:first-child { margin-top: 0; }
+  main h2 { font-size: 28px; }
   }
 </style>
 
@@ -134,19 +148,18 @@
   <div class="inner">
     <span class="eyebrow">Architecture decision document, proposed, September 2026</span>
     <h1>The Museum</h1>
-    <p>A first person puzzle game about being locked inside an alien recreation of a human museum. The halls are almost right. The artifacts are not. This page is the engine decision, the shape of the code, and the questions that have to be answered before Phase 0.</p>
+    <p>A first person puzzle game about being locked inside an alien recreation of a human museum. The halls are almost right. The artifacts are not. This page holds the engine decision and the shape of the code, then the world itself: five civilizations, a way of counting in sixes, and the animals they were dug up beside.</p>
     <div class="facts">
       <span>Engine <b>Godot 4.7.1 Forward+, C#</b></span>
       <span>Proven here <b>12 shadowed lights in fog, software Vulkan</b></span>
-      <span>Rules <b>CLAUDE.md</b></span>
-      <span>Source <b>docs/ARCHITECTURE.md</b></span>
+      <span>Input <b>Mouse, keyboard, gamepad</b></span>
+      <span>World <b>Invented, in the manner of Riven</b></span>
     </div>
   </div>
 </header>
 
 <div class="frame">
   <nav class="rail" aria-label="Sections">
-    <span class="eyebrow">Halls</span>
     {{NAV}}
   </nav>
   <main>

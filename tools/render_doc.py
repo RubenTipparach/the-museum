@@ -19,7 +19,8 @@ import markdown
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-SRC = os.path.join(ROOT, "docs", "ARCHITECTURE.md")
+DOCS = [("Architecture", os.path.join(ROOT, "docs", "ARCHITECTURE.md")),
+        ("The world", os.path.join(ROOT, "docs", "WORLD.md"))]
 OUT = os.path.join(ROOT, "docs", "ARCHITECTURE.html")
 PHOTOS = os.path.join(ROOT, "docs", "reference", "photos")
 
@@ -67,30 +68,46 @@ def slug(title):
     return re.sub(r"[\s]+", "-", s)
 
 
-with open(SRC) as f:
-    md_text = f.read()
-
-body = markdown.markdown(
-    md_text,
-    extensions=["tables", "fenced_code", "toc"],
-    extension_configs={"toc": {"toc_depth": "2-3"}},
-)
-body = embed_images(body)
-
 # Relative links resolve beside the Markdown, not from a published page. Point
 # them at the same files on the branch instead.
-REPO = "https://github.com/RubenTipparach/the-museum/blob/claude/museum-game-architecture-bqevws/"
-body = body.replace('href="../', 'href="' + REPO).replace('href="reference/', 'href="' + REPO + "docs/reference/")
-body = body.replace("<table>", '<div class="scroll"><table>').replace("</table>", "</table></div>")
+REPO = ("https://github.com/RubenTipparach/the-museum/blob/"
+        "claude/museum-game-architecture-bqevws/")
 
-# The title block is the H1; lift it out so the header can set it.
-body = re.sub(r"<h1[^>]*>.*?</h1>\s*", "", body, count=1, flags=re.S)
+# The world doc is on this same page, so its cross links become in page anchors.
+WORLD_TOP = "#d1-1-the-rule-that-makes-it-uncanny"
 
-nav = "".join(
-    '<a href="#%s"><span class="tag">%s</span><span>%s</span></a>'
-    % (slug(full), html.escape(tag), html.escape(short))
-    for tag, short, full in nav_from(md_text)
-)
+body, nav = "", ""
+for group, (label, path) in enumerate(DOCS):
+    with open(path) as f:
+        md_text = f.read()
+    part = markdown.markdown(
+        md_text,
+        extensions=["tables", "fenced_code", "toc"],
+        extension_configs={"toc": {
+            "toc_depth": "2-3",
+            "slugify": lambda value, sep, g=group: "d%d-%s" % (g, slug(value)),
+        }},
+    )
+    part = embed_images(part)
+    for old, new_href in (
+            ('href="WORLD.md"', 'href="%s"' % WORLD_TOP),
+            ('href="../WORLD.md"', 'href="%s"' % WORLD_TOP),
+            ('href="reference/README.md"', 'href="%sdocs/reference/README.md"' % REPO),
+            ('href="../reference/README.md"', 'href="%sdocs/reference/README.md"' % REPO),
+            ('href="../', 'href="%s' % REPO)):
+        part = part.replace(old, new_href)
+    part = part.replace("<table>", '<div class="scroll"><table>')
+    part = part.replace("</table>", "</table></div>")
+    # Each document's H1 is its own title; the page header carries the first.
+    part = re.sub(r"<h1[^>]*>.*?</h1>\s*", "", part, count=1, flags=re.S)
+    body += ('<section class="doc" id="doc-%d">'
+             '<span class="eyebrow docmark">%s</span>%s</section>'
+             % (group, html.escape(label), part))
+    nav += '<span class="eyebrow railgroup">%s</span>' % html.escape(label)
+    nav += "".join(
+        '<a href="#d%d-%s"><span class="tag">%s</span><span>%s</span></a>'
+        % (group, slug(full), html.escape(tag), html.escape(short))
+        for tag, short, full in nav_from(md_text))
 
 photos = ""
 for name in sorted(os.listdir(PHOTOS)):

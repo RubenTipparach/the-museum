@@ -7,7 +7,8 @@ wins.
 The architecture, the engine decision and the open questions live in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Read it before touching anything. The
 photographs the puzzles are seeded from, and what each one suggests, are in
-[docs/reference/README.md](docs/reference/README.md).
+[docs/reference/README.md](docs/reference/README.md), and the invented world they become
+is in [docs/WORLD.md](docs/WORLD.md).
 
 These rules are adopted from `RubenTipparach/redux-tribes` (`GUIDELINES.md`, `CLAUDE.md`)
 and `RubenTipparach/the-federation` (`CLAUDE.md`). Where those repos are stricter for
@@ -90,6 +91,8 @@ Each of these exists exactly once, and every caller goes through it (the list gr
 - **The observed / unobserved rule.** One system decides what the museum may change
   while the player is not looking. Rooms register with it; they do not roll their own.
 - **Asset loading.** One place spells every asset path.
+- **The world.** One numeral table, one script, one lexicon, one bestiary. The labels,
+  the glyph atlas and the puzzle evaluator all read them rather than holding a copy.
 
 ### 4.2 SOLID
 
@@ -138,7 +141,31 @@ is behaviour; data is what the code reads.
 - **Model docs are regenerated whenever a model changes**, with extents measured out of
   the file rather than estimated.
 
-## 6. Procedural generation is a build step, and it is the exception
+## 6. The world is invented, and it is authored once
+
+The museum holds our own civilizations, history, writing, numbers, animals and
+ecosystem, eerily close to Earth's and not quite them. No real culture, object, label
+text or donor is reproduced. `docs/WORLD.md` is the world; `docs/ARCHITECTURE.md` ADR-10
+is how it is kept honest.
+
+- **The world is data**, in `data/world/`: the numerals, the script, the lexicon, the
+  bestiary, the cultures. One file per system, and every reader asks it.
+- **Labels are generated from that data, never typed.** A hand written label is how the
+  museum contradicts itself in a game about noticing contradictions.
+- **The numerals are a mechanic, not a font.** The Combination puzzle kind reads the
+  same table the labels are set from.
+- **One count everywhere, one difference per thing.** Section 1 of `docs/WORLD.md` is
+  the rule, and `tools/verify_world.py` fails the build when something breaks it.
+
+## 7. Audio comes from the pipeline that already exists
+
+Adopted from `RubenTipparach/tom-lander` (ADR-12) and subject to section 5 like every
+other asset: music is a Strudel pattern rendered offline, with the `.strudel` source
+committed beside the render; sound effects are seeded pure stdlib Python synthesis, with
+the generator committed beside the `.wav`. No sound arrives in this repository without
+the thing that made it.
+
+## 8. Procedural generation is a build step, and it is the exception
 
 Procedural tools are allowed **offline, at build time, by a committed script, with the
 output committed as a static asset**, and only where authoring by hand is genuinely
@@ -149,7 +176,7 @@ is a room nobody designed. Each use is listed in `docs/ARCHITECTURE.md` ADR-7 wi
 reason it could not be authored. Nothing may be treated as an exception until it is
 listed there.
 
-## 7. Scenes are structure, code is behaviour
+## 9. Scenes are structure, code is behaviour
 
 - A `.tscn` defines what exists and how it is arranged. It does not define what things
   do. Scripts on nodes are thin: they wire the node to a system in the core library.
@@ -159,7 +186,7 @@ listed there.
 - UI panels are a fixed, authored size; content that does not fit scrolls, it never
   pushes. Menus name things, they do not explain them.
 
-## 8. The engine runs here, and visual work is proven with a frame
+## 10. The engine runs here, and visual work is proven with a frame
 
 **The engine must stay runnable in the Claude Code online sandbox, headless: install,
 test, build and render.** This ranks above every other technical preference. It is
@@ -176,38 +203,38 @@ requirement 0 in `docs/ARCHITECTURE.md` and ADR-0 is the measurement behind it.
 - Software rendering is slow (about 700 ms a frame). It proves what is drawn, never how
   fast. Performance numbers come from the reference hardware in ADR-9.
 
-## 9. Budget everything, and measure before you blame
+## 11. Budget everything, and measure before you blame
 
 Frame time, light count, shadow atlas occupancy, draw calls and texture memory each have
 a written budget (ADR-3, ADR-9) and the numbers in a commit message are measured, not
 felt. "Faster" is not a result; 16 ms to 4 ms is. Keep a quality ladder rather than one
 setting, and make the game stand a feature down when it measures itself over budget.
 
-## 10. Tests before a push
+## 12. Tests before a push
 
-The suites are listed in `docs/ARCHITECTURE.md` section 10 and grow with the code. Today
+The suites are listed in `docs/ARCHITECTURE.md` section 13 and grow with the code. Today
 they are `scripts/check-style.sh` and `scripts/render-proof.sh`. A web session can verify that
 something renders, that inputs route and that numbers agree. It cannot verify that
 something feels right: feel gets a human and a link.
 
-## 11. No self scheduled check-ins
+## 13. No self scheduled check-ins
 
 Do not schedule recurring check-ins, polling loops or re-arming reminders on a pull
 request, a CI run or anything else here, unless the owner asks for one. Watching a pull
 request is server side already; end the turn and let the events arrive. When a check-in
 fires, do the work it names, report once, and stop.
 
-## 12. After every push, hand over the links
+## 14. After every push, hand over the links
 
 A push is finished when the owner can look at it: the pull request link and, once a
 deploy exists, the run for the pushed commit and the place the build can be played.
 
-## 13. Documented exceptions
+## 15. Documented exceptions
 
 Exceptions to the rules above live here, with the reason. Nothing may be treated as an
 exception until it is listed and agreed.
 
-- **`tools/lightproof/Shoot.cs` builds its scene in code.** Section 7 forbids that
+- **`tools/lightproof/Shoot.cs` builds its scene in code.** Section 9 forbids that
   for game scenes. This one file is not a game scene: it is the renderer proof behind
   ADR-0, it has to exist before any authored scene does, and it is retired the day the
   first authored room can be rendered by `scripts/render-proof.sh` instead. Agreed with

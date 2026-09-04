@@ -5,11 +5,15 @@ museum. The halls are almost right. The artifacts are not. Puzzles in the tradit
 *Myst* and *Riven*, inspected the way *The Room* inspects an object, lit like a public
 building after hours.
 
+Desktop, Godot 4.7 Forward+ with C#, keyboard and mouse and a gamepad. The civilizations
+in it are our own: their history, their writing, their way of counting, their animals.
+
 | Doc | Contents |
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Project rules. Binding. |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Engine decision, the engine free core, lighting, camera, puzzles, pipeline, budgets, and the questions to answer before Phase 0 |
-| [docs/reference/README.md](docs/reference/README.md) | The photographs the puzzles are seeded from, and what each suggests |
+| [docs/WORLD.md](docs/WORLD.md) | The invented civilizations, numbers, writing, animals and ecosystem, in the manner of Riven. A proposal, awaiting approval |
+| [docs/reference/README.md](docs/reference/README.md) | The photographs the puzzles are seeded from, what each suggests, and the invented hall it becomes |
 
 ## Status
 
@@ -23,6 +27,7 @@ Game systems are prototyped as interactive pages and approved before they are bu
 python3 tools/render_doc.py  # regenerate docs/ARCHITECTURE.html from the Markdown
 ```
 
-`docs/ARCHITECTURE.html` is the review copy of the architecture document, published as
+`docs/ARCHITECTURE.html` is the review copy of the architecture document and the world
+bible, published as
 an artifact at https://claude.ai/code/artifact/7b5d842a-a958-4a48-90a4-29934fa41da1. It
 is a build product of the Markdown: regenerate it, never edit it.
