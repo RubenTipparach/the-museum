@@ -487,6 +487,13 @@ The first prototypes, each an interactive page with the game's own numbers:
 Every approved page lives at `mockups/<slug>/index.html` and is kept in step with the
 game per CLAUDE.md 3.
 
+**Approved so far:** `mockups/elmorian-exhibit/` (2026-09-04), which covers the first
+three of the four prototypes above in one page: the inspect transition, one puzzle of
+each kind on the graph the core will run, and the observed rule's first use (the museum
+does not yet change behind the player; that is the next prototype). What was approved
+is the play, the look and the voice of the labels; the assets it draws itself remain
+the prototype's own until they are authored (CLAUDE.md 5).
+
 ---
 
 ## ADR-9: Budgets, and measuring before blaming
@@ -719,6 +726,7 @@ document, and so a later change of mind has something to change.
 | Audio | **The `tom-lander` pipeline**: Strudel rendered offline for music, seeded Python synthesis for effects, sources committed | ADR-12 |
 | The world | **Invented, in the manner of Riven**: our own civilizations, history, writing, numbers, animals and ecosystem, eerily close to Earth's | ADR-10, `WORLD.md` |
 | The default branch | **`main` exists**, and this work is a pull request into it | the repository |
+| The Elmorian exhibit | **Approved as built** (2026-09-04): the four rooms and their puzzles, the museum shell from Blender (carpet, painted walls, relief feature walls with vines, black truss with track heads, stanchions, exit signs, extinguishers, staff door), a wide spot on every station and a light on every plaque. Prototype: `mockups/elmorian-exhibit/`, published as an artifact | ADR-5, ADR-8, ADR-13, `WORLD.md` 4.6 |
 
 ---
 
