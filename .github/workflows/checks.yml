@@ -1,0 +1,37 @@
+# Thin by design: every step is a script in scripts/, which a developer runs the
+# same way. Build logic in workflow YAML is a second implementation that drifts
+# from the local one, which CLAUDE.md 4.1 forbids.
+
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  style:
+    name: No em or en dashes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/check-style.sh
+
+  render:
+    name: The engine renders
+    # Requirement 0 (docs/ARCHITECTURE.md ADR-0) is proven in the Claude Code
+    # sandbox by rule, and this job is the same proof on a runner. It is manual
+    # for now because it downloads a 106 MB editor and installs system packages,
+    # and it has not yet been observed to pass here. Move it onto pull_request
+    # the first time a manual run goes green.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo ./scripts/install-sandbox-deps.sh
+      - run: ./scripts/render-proof.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forward-plus-frame
+          path: docs/reference/forward_plus_lavapipe_proof.png

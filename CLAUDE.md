@@ -21,7 +21,8 @@ rule stays there. What is kept is what holds regardless of game.
 
 Straight ASCII hyphens only: in code, comments, docs, commit messages, PR bodies, in
 game text and chat. U+2014 and U+2013 are banned by codepoint, and
-`scripts/check-style.sh` greps for them. Run it before every push; CI will run it too.
+`scripts/check-style.sh` greps for them, and `.github/workflows/checks.yml` runs it on
+every push and pull request. Run it before every push rather than finding out from CI.
 
 | Instead of a dash | Use |
 |---|---|
@@ -213,7 +214,8 @@ setting, and make the game stand a feature down when it measures itself over bud
 ## 12. Tests before a push
 
 The suites are listed in `docs/ARCHITECTURE.md` section 13 and grow with the code. Today
-they are `scripts/check-style.sh` and `scripts/render-proof.sh`. A web session can verify that
+they are `scripts/check-style.sh`, which CI runs, and `scripts/render-proof.sh`, which
+CI can run on demand and this sandbox runs by rule (section 10). A web session can verify that
 something renders, that inputs route and that numbers agree. It cannot verify that
 something feels right: feel gets a human and a link.
 
