@@ -453,8 +453,14 @@ puzzle room is the encounter.
 
 Listed uses, with the reason authoring was impractical:
 
-- None yet. The expected first entries are the diorama's few hundred coffee shrubs
-  and the trees in the plantation backdrop.
+- **Vines on the Elmorian feature walls** (`tools/blenderlib.py`, `vines`), added
+  2026-09-04 on the owner's ask for a vine generator. A seeded random walk climbs a
+  wall from its foot, branches once in a while and carries leaf cards; four vines a
+  wall, a few hundred leaves. Authoring that by hand is placing every leaf, and a
+  reseed is what changes it. The output is committed in the exhibit's `.glb` and
+  `.blend`; a rerun with the seed writes the same vines.
+- Expected next: the diorama's few hundred coffee shrubs and the trees in the
+  plantation backdrop.
 
 Anything not listed is not an exception.
 
@@ -618,15 +624,63 @@ invents a second way of making a sound.
 
 ---
 
+## ADR-13: The shell is built in Blender from the layout, headless, and proven by a render
+
+**Decision (owner, 2026-09-04):** an exhibit's architecture and fixtures are modelled
+in Blender by a committed script from `data/layout/<exhibit>.json`, with boolean
+modelling for every opening and recess, UVs at world scale, and the practice written
+in [`BLENDER.md`](BLENDER.md). `tools/blenderlib.py` is the one implementation of the
+steps and the gate; `tools/build_exhibit.py` reads the layout and builds. The pinned
+Blender (4.2.3 LTS) is installed by `scripts/install-blender.sh` and proven to run here
+the same day: the whole Elmorian shell builds, checks, exports and renders headless in
+this sandbox in under a minute.
+
+**What the layout file decides and the script only obeys:** rooms and their materials,
+walls and their door openings, stations, plaques, and the fixtures a real hall has: an
+exit sign over every leaving door, an extinguisher beside it, a staff door, a black
+truss grid, stanchions before each station, and one track head per plaque and station,
+which are derived rather than listed so a new plaque cannot be added without its light.
+
+**What the gate refuses** (BLENDER.md 8): a mesh with no UVs, an unapplied transform, a
+material not named for a role, a non manifold edge on a closed solid, a triangle count
+over its budget, and UV stretch outside the band. Its first run refused the facade for a
+27 percent stretched face that turned out to be a bevel strip, which is recorded in the
+doc as the exemption it earned.
+
+**The prototype loads the result.** The `.glb` and the texture set are embedded in the
+mockup page by `tools/build_mockup.py`, materials bound by role name, and the
+prototype's own light pool puts a spot on every plaque from the same standoff the
+Blender heads use. The plaque planes, door slabs and the hall sign are found in the
+shell by name; the puzzles stay the prototype's own until they become props.
+
+**Textures** are the declared stopgap, `tools/gen_museum_textures.py`, because Material
+Maker 1.4 segfaults while loading its own interface under this sandbox's software GL
+(recorded in that script's header with the launch variants tried). It is held to the
+same contract: static committed PNGs, a committed source, `--check` for drift, every
+dimension a power of two.
+
+---
+
 ## 13. Tests, and the suites that grow with the code
 
 Every suite that exists must pass before a push (CLAUDE.md 9). Today:
 
 ```sh
-./scripts/check-style.sh           # no em or en dashes, anywhere
-./scripts/render-proof.sh          # the engine installs, compiles C#, and draws a lit
-                                   # Forward+ frame here (ADR-0); about two minutes cold
+./scripts/check-style.sh                     # no em or en dashes, anywhere
+./scripts/render-proof.sh                    # the engine installs, compiles C#, and draws a lit
+                                             # Forward+ frame here (ADR-0); about two minutes cold
+node mockups/elmorian-exhibit/test.mjs       # the four puzzles, solved without a browser
+python3 tools/gen_museum_textures.py --check # the texture set matches its generator
+./scripts/build-exhibit.sh elmorian          # the shell builds, passes the gate, exports, renders
+
+python3 tools/build_mockup.py elmorian-exhibit
+node mockups/elmorian-exhibit/playthrough.mjs             # plays the exhibit to its end, 390x844
+node mockups/elmorian-exhibit/playthrough.mjs --landscape # and at 844x390
 ```
+
+The playthrough is the one that plays the game, and it already found two defects the
+unit tests were blind to (black pads from a clobbered userData, and stations framed for
+the wrong screen). It taps where a player taps and reads `ftDebug` only to observe.
 
 As code lands, in this order:
 

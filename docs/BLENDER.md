@@ -64,13 +64,21 @@ Two rules make that mechanical rather than a matter of care:
   with its neighbour's, and a 4 metre wall shows exactly as much brick as a 4 metre
   wall should. The texel density is written once, in `data/layout/<exhibit>.json`
   as `texelDensity` (pixels per metre), and every material's tile size follows it.
-- **Props are smart projected, then scaled to the same density.** `uv.smart_project`
-  with an island margin, then the islands are scaled so their UV area matches their
-  world area at the density. Packed afterward. The density is the same number.
+- **Props are projected per face, at the same density.** Every face onto its own
+  plane, world coordinates divided by the tile: zero stretch on any face by
+  construction, and a seam at every edge, which is the right trade for a prop that
+  wears a near uniform finish (black steel, a painted cylinder). Blender's smart
+  projection was tried first and the gate refused it: it groups faces within its angle
+  limit onto one plane, and a sixteen sided barrel's steep faces came out 39 percent
+  off. A prop that needs a continuous pattern across a curve is unwrapped by hand
+  with seams, in the `.blend`, and that is the exception to write down when it comes.
 - **It is checked, per face.** `blenderlib.uv_stretch_report` compares each face's
   world area to its UV area times the texture's area, and fails the export if the
   ratio across a mesh varies by more than 8 percent or any face is off by more than
-  25 percent. Stretch is a number; nobody has to look for it.
+  25 percent. Stretch is a number; nobody has to look for it. Bevel strips are exempt:
+  a face a centimetre wide holds no texel to stretch, and the first run of the gate
+  refused the facade for one at 27 percent, which was the check being right about
+  the wrong thing.
 - **No two parts share a UV area unless they tile.** A plaque, a sign face, an
   extinguisher label: their own island, no overlap, so a decal lands on one thing.
 

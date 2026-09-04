@@ -10,7 +10,7 @@
     fov: 62, near: 0.05, far: 60,
     easeK: 5.5,               // camera ease, 1 - exp(-k dt)
     orbitSens: 0.0052, pitchMin: -0.35, pitchMax: 0.62,
-    distMin: 2.0, distMax: 3.6,
+    distMin: 2.0, distMax: 3.4,
     inspectNudge: 0.22,       // radians of drag allowed at an anchor
     tapMs: 450, tapPx: 9,
     wallH: 4, wallT: 0.4, doorW: 1.8, doorH: 2.7,
@@ -34,13 +34,15 @@
   scene.fog = new THREE.FogExp2(0x05070a, 0.055);
   var camera = new THREE.PerspectiveCamera(T.fov, 1, T.near, T.far);
 
-  // Four lights, always. They move to the room the player is in rather than
-  // every room carrying its own, so the shader never recompiles for a new
-  // light count and a phone never pays for fifteen lights it cannot see.
+  // A fixed pool of lights that follows the room the player is in, so the
+  // shader never recompiles for a new light count and a phone never pays for
+  // lights it cannot see: one room light, and a track head on every plaque
+  // and station, which is what the owner asked for and what a museum does.
   var hemi = new THREE.HemisphereLight(0x243228, 0x0a0805, 0.22); scene.add(hemi);
-  var lampA = new THREE.PointLight(0xffd7a3, 14, 11, 2); scene.add(lampA);
-  var lampB = new THREE.PointLight(0xffe6c0, 9, 8, 2); scene.add(lampB);
-  var spot = new THREE.SpotLight(0xfff0d0, 40, 12, 0.55, 0.6, 1.6); scene.add(spot); scene.add(spot.target);
+  var lampA = new THREE.PointLight(0xffd7a3, 10, 11, 2); scene.add(lampA);
+  var SPOTS = 5, spots = [];
+  for (var si = 0; si < SPOTS; si++) { var sp = new THREE.SpotLight(0xfff0d0, 0, 12, 0.5, 0.6, 1.4); scene.add(sp); scene.add(sp.target); spots.push(sp); }
+  var LAY = window.LAYOUT, TEX = window.TEXTURES;
 
   // ---- textures and materials ------------------------------------------------------
   function tex(c, repeat) {
@@ -54,101 +56,79 @@
     if (extra) Object.assign(m, extra); return m;
   }
   var plaqueMats = {};
-
-  // ---- the plan: walls, floors, ceilings ---------------------------------------------
-  var solids = [];  // walls that hide things behind them in raycasts
-  function box(w, h, d, mat, x, y, z, ry) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry;
-    scene.add(m); return m;
+  var roleMats = {};
+  function roleMat(name) {
+    if (roleMats[name]) return roleMats[name];
+    var t = TEX[name] || {}, m = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: name.indexOf('metal') >= 0 ? 0.6 : 0.0 });
+    // flipY off: these go on the shell, whose glTF UVs are already flipped.
+    function load(uri, srgb) { var im = new Image(); var tx = new THREE.Texture(im); tx.flipY = false; im.onload = function () { tx.needsUpdate = true; }; im.src = uri; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; if (srgb) tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; return tx; }
+    if (t.albedo) m.map = load(t.albedo, true); else m.color.setHex({ mat_void_black: 0x030303, mat_lamp: 0xfff2d0, mat_plaque: 0x8c8470, mat_sign_hall: 0x8c8470, mat_belt: 0x6a1418, mat_extinguisher: 0xb01008 }[name] || 0x777777);
+    if (t.normal) { m.normalMap = load(t.normal, false); m.normalScale.set(0.8, 0.8); }
+    if (t.rough) m.roughnessMap = load(t.rough, false);
+    if (name === 'mat_leaf') { m.transparent = false; m.alphaTest = 0.5; m.side = THREE.DoubleSide; }
+    if (name === 'mat_lamp') { m.emissive.setHex(0xffe0a0); m.emissiveIntensity = 2.5; }
+    if (name === 'mat_sign_exit') { m.emissive.setHex(0x20c050); m.emissiveIntensity = 0.7; if (m.map) m.emissiveMap = m.map; }
+    if (name === 'mat_extinguisher') { m.color.setHex(0xb01008); m.roughness = 0.45; }
+    roleMats[name] = m; return m;
   }
-  // A wall from (ax,az) to (bx,bz), optionally with a door opening at `at`
-  // (distance along the wall) of the standard width and height.
-  function wall(ax, az, bx, bz, at) {
-    var dx = bx - ax, dz = bz - az, len = Math.hypot(dx, dz), ang = Math.atan2(dx, dz);
-    var ux = dx / len, uz = dz / len;
-    function seg(s0, s1, y0, y1) {
-      var cx = ax + ux * (s0 + s1) / 2, cz = az + uz * (s0 + s1) / 2;
-      var m = box(T.wallT, y1 - y0, s1 - s0, stoneMat(stoneWall, 1.6, (s1 - s0) / 2.2), cx, (y0 + y1) / 2, cz, ang);
-      solids.push(m);
-    }
-    if (at === undefined) { seg(0, len, 0, T.wallH); return; }
-    var a = at - T.doorW / 2, b = at + T.doorW / 2;
-    seg(0, a, 0, T.wallH); seg(b, len, 0, T.wallH); seg(a, b, T.doorH, T.wallH);
-  }
-  // Room 1 and the facade
-  wall(-12.6, -0.8, 4.2, -0.8, 12.6);      // the facade, door at x = 0
-  wall(4.2, -0.8, 8.4, -0.8);
-  wall(-4.2, -9.2, 4.2, -9.2);             // R1 north, the gaze wall
-  wall(4.2, -9.2, 4.2, -0.8);              // R1 east
-  wall(-4.2, -9.2, -4.2, -0.8, 4.2);       // R1 west, door to R2 at z = -5
-  // Room 2
-  wall(-12.6, -9.2, -4.2, -9.2, 4.2);      // R2 north, door to R3 at x = -8.4
-  wall(-12.6, -9.2, -12.6, -0.8);          // R2 west, the stack wall
-  // Room 3
-  wall(-4.2, -17.6, -4.2, -9.2, 4.2);      // R3 east, door to R4 at z = -13.4
-  wall(-12.6, -17.6, -12.6, -9.2);         // R3 west, the speech wall
-  wall(-12.6, -17.6, -4.2, -17.6);         // R3 north
-  // Room 4
-  wall(4.2, -17.6, 4.2, -9.2);             // R4 east, the seeing wall
-  wall(-4.2, -17.6, 4.2, -17.6, 4.2);      // R4 north, the ancestor door at x = 0
-  // The alcove
-  wall(-2.2, -22, -2.2, -17.6); wall(2.2, -22, 2.2, -17.6); wall(-2.2, -22, 2.2, -22);
 
-  var floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), stoneMat(stoneFloor, 30, 30));
-  floor.rotation.x = -PI / 2; scene.add(floor); solids.push(floor);
-  function ceiling(cx, cz, w, d) {
-    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), stoneMat(stoneDark, w / 2, d / 2));
-    m.rotation.x = PI / 2; m.position.set(cx, T.wallH, cz); scene.add(m); solids.push(m);
+  // ---- the shell: assets/exhibit/elmorian.glb, built by Blender from the layout ----
+  var solids = [];    // what a tap ray can stop on
+  var shellByName = {};
+  var plaqueMeshes = {};
+  (function loadShell() {
+    var bytes = Uint8Array.from(atob(window.SHELL_GLB), function (c) { return c.charCodeAt(0); });
+    var loader = new window.GLTFLoaderModule.GLTFLoader();
+    loader.parse(bytes.buffer, '', function (gltf) {
+      gltf.scene.traverse(function (o) {
+        if (!o.isMesh) return;
+        var role = o.material && o.material.name;
+        o.material = roleMat(role || 'mat_stone_paving');
+        shellByName[o.name] = o;
+        if (/^door_\d+_slab$/.test(o.name)) { var i = +o.name.split('_')[1]; DOORS[i].mesh = o; DOORS[i].closedY = o.position.y; DOORS[i].openY = o.position.y - T.doorH - 0.1; mark(o, { kind: 'door', i: i }); }
+        else if (o.name.indexOf('plaque_') === 0) { plaqueMeshes[o.name.slice(7)] = o; }
+        else if (o.name === 'sign_hall') { o.material = signMat; }
+        else if (o.name.indexOf('vines_') < 0) solids.push(o);
+      });
+      scene.add(gltf.scene);
+      DOORS.forEach(function (d, i) { if (d.mesh && X.open[i]) d.mesh.position.y = d.openY; });
+      Object.keys(plaqueMeshes).forEach(function (id) { var m = plaqueMeshes[id]; m.material = plaqueMat(id); mark(m, { kind: 'plaque', id: id, normal: plaqueNormal(id) }); });
+    }, function (err) { console.error('shell failed to load', err); });
+  })();
+  var signTex = tex(A.sign(512, 200, [L.hall, 'The Elmorians'])); signTex.flipY = false; signTex.needsUpdate = true;
+  var signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.8 });
+  var cache = {};
+  function plaqueMat(id) {
+    if (cache[id]) return cache[id];
+    var def = L.plaques[id], c = A.plaque(512, 366, function (g) {
+      if (def.art === 'diagramSpeech') A.diagramSpeech(g, 512, 366, P.makeSpeech().greeting);
+      else if (def.art === 'diagramFinal') { var gz = P.makeGaze(); A.diagramFinal(g, 512, 366, gz.final, P.makeSpeech().farewell); }
+      else A[def.art](g, 512, 366);
+    }, '#8c8470', id.length * 7);
+    var t = tex(c); t.flipY = false; t.needsUpdate = true;
+    cache[id] = new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 }); return cache[id];
   }
-  ceiling(0, -5, 8.4, 8.4); ceiling(-8.4, -5, 8.4, 8.4); ceiling(-8.4, -13.4, 8.4, 8.4); ceiling(0, -13.4, 8.4, 8.4); ceiling(0, -19.8, 4.4, 4.4);
-
-  // ---- the arch --------------------------------------------------------------------------
-  var archMat = stoneMat(A.stone(256, '#7d7565', 41, false), 1, 1);
-  box(0.5, 2.7, 0.5, archMat, -1.45, 1.35, 0.1); box(0.5, 2.7, 0.5, archMat, 1.45, 1.35, 0.1);
-  var archTop = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.26, 10, 28, PI), archMat);
-  archTop.position.set(0, 2.7, 0.1); scene.add(archTop);
-  var key = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.6), archMat); key.position.set(0, 4.15, 0.1); key.rotation.z = PI / 4; scene.add(key);
-  // the hall sign under the arch, and the reliefs on the pillars
-  var signMat = new THREE.MeshStandardMaterial({ map: tex(A.sign(512, 200, [L.hall, 'The Elmorians'])), roughness: 0.8 });
-  var signM = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.66), signMat); signM.position.set(0, 3.25, -0.59); scene.add(signM);
-  ['portrait', 'drink'].forEach(function (id, i) {
-    var c = A.plaque(256, 512, function (g) { A.elmorian(g, 128, 210, 150, { fill: false }); A.numeral(g, 128, 440, 40, i ? 6 : 3); }, '#7d7565', 43 + i);
-    var m = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.84), new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.85 }));
-    m.position.set(i ? 1.45 : -1.45, 1.5, 0.36); scene.add(m);
-  });
+  function plaqueNormal(id) { var p = LAY.plaques.filter(function (q) { return q.id === id; })[0]; return V3(p.normal[0], 0, p.normal[2]); }
+  function plaqueDef(id) { return LAY.plaques.filter(function (q) { return q.id === id; })[0]; }
 
   // ---- the rooms and the camera's places in them ---------------------------------------------
   var ROOMS = [
     { center: V3(0, 1.8, -0.4), yaw: 0, pitch: 0.02, dist: 4.4, lamps: [[0, 3.4, 3.2], [0, 2.6, 1.2]], spot: [[0, 4.6, 3.6], [0, 2.2, -0.4]] },
-    { center: V3(0, 1.5, -4.4), yaw: 0, pitch: 0.05, dist: 3.1, lamps: [[0, 3.6, -5], [0, 3.0, -8]], spot: [[0, 3.8, -6.3], [0, 2.0, -9.0]] },
-    { center: V3(-7.6, 1.5, -5), yaw: PI / 2, pitch: 0.05, dist: 3.1, lamps: [[-8.4, 3.6, -5], [-10.6, 3.0, -5]], spot: [[-9.4, 3.8, -5], [-11.3, 1.0, -5]] },
-    { center: V3(-7.6, 1.5, -13.4), yaw: PI / 2, pitch: 0.05, dist: 3.1, lamps: [[-8.4, 3.6, -13.4], [-10.6, 3.0, -13.4]], spot: [[-9.4, 3.8, -13.4], [-12.4, 1.6, -13.4]] },
-    { center: V3(0, 1.5, -13.4), yaw: -PI / 2, pitch: 0.05, dist: 3.1, lamps: [[0, 3.6, -13.4], [2.2, 3.0, -13.4]], spot: [[1.4, 3.8, -13.4], [4.0, 2.0, -13.4]] },
+    { center: V3(0, 1.5, -4.8), yaw: 0, pitch: 0.05, dist: 3.0, lamps: [[0, 3.6, -5], [0, 3.0, -8]], spot: [[0, 3.8, -6.3], [0, 2.0, -9.0]] },
+    { center: V3(-8.0, 1.5, -5), yaw: PI / 2, pitch: 0.05, dist: 3.0, lamps: [[-8.4, 3.6, -5], [-10.6, 3.0, -5]], spot: [[-9.4, 3.8, -5], [-11.3, 1.0, -5]] },
+    { center: V3(-8.0, 1.5, -13.4), yaw: PI / 2, pitch: 0.05, dist: 3.0, lamps: [[-8.4, 3.6, -13.4], [-10.6, 3.0, -13.4]], spot: [[-9.4, 3.8, -13.4], [-12.4, 1.6, -13.4]] },
+    { center: V3(0, 1.5, -13.4), yaw: -PI / 2, pitch: 0.05, dist: 3.0, lamps: [[0, 3.6, -13.4], [2.2, 3.0, -13.4]], spot: [[1.4, 3.8, -13.4], [4.0, 2.0, -13.4]] },
     { center: V3(0, 1.3, -19.9), yaw: 0, pitch: 0.08, dist: 2.0, lamps: [[0, 3.5, -19.8], [0, 3.2, -18.4]], spot: [[0, 3.9, -18.6], [0, 1.4, -19.8]] }
   ];
-  var DOORS = [
-    { pos: V3(0, 0, -0.8), axis: 'x', rooms: [0, 1], slab: false },
-    { pos: V3(-4.2, 0, -5), axis: 'z', rooms: [1, 2], slab: true, glyph: function (g, s) { A.numeral(g, s * 0.3, s * 0.5, s * 0.34, 3); A.numeral(g, s * 0.5, s * 0.5, s * 0.34, 3); A.numeral(g, s * 0.7, s * 0.5, s * 0.34, 3); } },
-    { pos: V3(-8.4, 0, -9.2), axis: 'x', rooms: [2, 3], slab: true, glyph: function (g, s) { A.word(g, s * 0.5, s * 0.3, s * 0.3, 0); for (var i = 0; i < 4; i++) { g.beginPath(); g.ellipse(s * 0.5, s * 0.78 - i * s * 0.07, s * 0.2 - i * s * 0.035, s * 0.03, 0, 0, PI * 2); g.stroke(); } } },
-    { pos: V3(-4.2, 0, -13.4), axis: 'z', rooms: [3, 4], slab: true, glyph: function (g, s) { A.word(g, s * 0.5, s * 0.5, s * 0.5, 3); } },
-    { pos: V3(0, 0, -17.6), axis: 'x', rooms: [4, 5], slab: true, glyph: null }
-  ];
+  var DOORS = LAY.doors.map(function (d) { return { pos: V3(d.at[0], 0, d.at[1]), axis: d.axis, rooms: d.rooms, slab: d.slab }; });
 
   var interact = [];   // everything a tap may land on
   function mark(mesh, data) { Object.assign(mesh.userData, data); interact.push(mesh); return mesh; }
 
-  // Door slabs, and an invisible pane in each opening so an open door can be
-  // tapped to walk through.
+  // An invisible pane in each opening so an open door can be tapped to walk
+  // through. The slabs themselves come from the shell.
   DOORS.forEach(function (d, i) {
     var ry = d.axis === 'x' ? 0 : PI / 2;
-    if (d.slab) {
-      var c = A.canvas(256, 256), g = c.getContext('2d');
-      g.drawImage(A.stone(256, '#5b564c', 50 + i), 0, 0);
-      if (d.glyph) { g.strokeStyle = g.fillStyle = 'rgba(20,16,10,0.85)'; g.lineWidth = 6; g.lineCap = 'round'; d.glyph(g, 256); }
-      var mat = new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.9 });
-      var slab = box(T.doorW, T.doorH, 0.24, mat, d.pos.x, T.doorH / 2, d.pos.z, ry);
-      d.mesh = mark(slab, { kind: 'door', i: i }); d.closedY = T.doorH / 2; d.openY = -T.doorH / 2 - 0.1;
-    }
     var pane = new THREE.Mesh(new THREE.PlaneGeometry(T.doorW, T.doorH), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
     pane.position.set(d.pos.x, T.doorH / 2, d.pos.z); pane.rotation.y = ry; pane.material.side = THREE.DoubleSide; scene.add(pane);
     d.pane = mark(pane, { kind: 'doorway', i: i });
@@ -163,7 +143,7 @@
       else A[def.art](g, 512, 366);
     }, '#8c8470', id.length * 7);
     var m = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.0), new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.85 }));
-    m.position.set(x, y, z); m.rotation.y = Math.atan2(n[0], n[2]);
+    m.position.set(x + n[0] * 0.02, y, z + n[2] * 0.02); m.rotation.y = Math.atan2(n[0], n[2]);
     m.userData.normal = V3(n[0], 0, n[2]); scene.add(m);
     return mark(m, { kind: 'plaque', id: id, normal: V3(n[0], 0, n[2]), dist: 1.5 });
   }
@@ -171,6 +151,11 @@
   plaque('cliff', -10.6, 2.0, -1.0, [0, 0, -1]); plaque('stack', -8.4, 2.0, -1.0, [0, 0, -1]); plaque('drink', -6.2, 2.0, -1.0, [0, 0, -1]);
   plaque('touch', -9.5, 2.0, -17.4, [0, 0, 1]); plaque('greet', -7.3, 2.0, -17.4, [0, 0, 1]);
   plaque('ancestors', -2.4, 2.0, -9.4, [0, 0, -1]); plaque('six', 0, 2.0, -9.4, [0, 0, -1]); plaque('farewell', 2.4, 2.0, -9.4, [0, 0, -1]);
+
+  function box(w, h, d, mat, x, y, z, ry) {
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry;
+    scene.add(m); return m;
+  }
 
   // ---- room 1: the eye discs -------------------------------------------------------------
   var X = P.makeExhibit();
@@ -200,7 +185,7 @@
   [[2, 0], [1, 2]].forEach(function (s) {
     var c = A.canvas(128, 128), g = c.getContext('2d'); g.strokeStyle = g.fillStyle = 'rgba(28,22,12,0.85)'; A.word(g, 64, 64, 110, s[1]);
     var m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), new THREE.MeshStandardMaterial({ map: tex(c), transparent: true, roughness: 0.9 }));
-    m.position.set(-12.39, 2.6, pegZ[s[0]]); m.rotation.y = PI / 2; scene.add(m);
+    m.position.set(-12.37, 2.6, pegZ[s[0]]); m.rotation.y = PI / 2; scene.add(m);
   });
   var rings = [];
   function ringHome(size, peg, index) { return V3(pegX, plinthTop + 0.1 + index * 0.17, pegZ[peg]); }
@@ -239,7 +224,7 @@
   [-15.0, -13.4, -11.8].forEach(function (z, i) {
     var c = A.seeingStone(256, stoneDraw[i]);
     var m = new THREE.Mesh(new THREE.CircleGeometry(0.55, 40), new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.5, emissive: new THREE.Color(0x1a2a20), emissiveIntensity: 0.6 }));
-    m.position.set(3.99, 2.1, z); m.rotation.y = -PI / 2; scene.add(m); m.userData.canvas = c;
+    m.position.set(3.975, 2.1, z); m.rotation.y = -PI / 2; scene.add(m); m.userData.canvas = c;
     mark(m, { kind: 'stone', i: i, normal: V3(-1, 0, 0), dist: 1.6 }); stones.push(m);
   });
   function refreshStones() { stones.forEach(function (m, i) { var c = m.userData.canvas; var nc = A.seeingStone(256, stoneDraw[i]); c.getContext('2d').drawImage(nc, 0, 0); m.material.map.needsUpdate = true; }); }
@@ -272,9 +257,22 @@
   function setGoal(target, yaw, pitch, dist) { rig.goal.target.copy(target); rig.goal.yaw = nearAngle(yaw, rig.yaw); rig.goal.pitch = pitch; rig.goal.dist = dist; }
   function placeLights(r) {
     var R = ROOMS[r];
-    lampA.position.set(R.lamps[0][0], R.lamps[0][1], R.lamps[0][2]); lampB.position.set(R.lamps[1][0], R.lamps[1][1], R.lamps[1][2]);
-    spot.position.set(R.spot[0][0], R.spot[0][1], R.spot[0][2]); spot.target.position.set(R.spot[1][0], R.spot[1][1], R.spot[1][2]);
+    lampA.position.set(R.lamps[0][0], R.lamps[0][1], R.lamps[0][2]);
+    // every plaque in this room, then its station: the track heads the shell carries
+    var so = LAY.fixtures.lighting.standoff, y = LAY.fixtures.truss.y - 0.4;
+    var aims = LAY.plaques.filter(function (p) { return roomOf(p.pos) === r; }).map(function (p) { return [p.pos, p.normal, 26, 0.52]; });
+    Object.keys(LAY.stations).forEach(function (k) { var st = LAY.stations[k]; if (st.room === r) aims.push([st.point, st.normal, 70, 0.8]); });
+    if (r === 0) aims.push([[0, 3.25, -0.6], [0, 0, 1], 30, 0.5], [[0, 1.6, -0.6], [0, 0, 1], 24, 0.7]);
+    if (r === 5) aims.push([[0, 1.4, -19.9], [0, 0.6, 1], 50, 0.7]);
+    spots.forEach(function (sp, i) {
+      var a = aims[i];
+      if (!a) { sp.intensity = 0; return; }
+      var n = a[1], len = Math.hypot(n[0], n[2]) || 1;
+      sp.position.set(a[0][0] + n[0] / len * so, y, a[0][2] + n[2] / len * so);
+      sp.target.position.set(a[0][0], a[0][1], a[0][2]); sp.intensity = a[2]; sp.angle = a[3];
+    });
   }
+  function roomOf(p) { for (var i = 0; i < LAY.rooms.length; i++) { var b = LAY.rooms[i].bounds; if (p[0] >= b[0] && p[0] <= b[2] && p[2] >= b[1] && p[2] <= b[3]) return LAY.rooms[i].id; } return -1; }
   function goRoom(r, instant) {
     var R = ROOMS[r], from = rig.room;
     rig.mode = 'room'; rig.station = null; rig.room = r; hideCard(); backBtn.hidden = true;
@@ -317,7 +315,7 @@
     final: { point: V3(4.0, 2.0, -13.4), normal: V3(-1, 0, 0), w: 4.4, h: 1.5, cap: 6.8, room: 4 }
   };
   function goStation(name) { var s = STATIONS[name]; inspect(s.point, s.normal, fitDist(s.w, s.h, s.cap), name); }
-  function roomDist(R) { return camera.aspect < 1 ? R.dist + 0.5 : R.dist; }
+  function roomDist(R) { return camera.aspect < 1 ? R.dist + 0.3 : R.dist; }
 
   // ---- input ---------------------------------------------------------------------------------------
   var pointers = {}, drag = null, pinchD = 0;

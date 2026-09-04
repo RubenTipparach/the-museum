@@ -17,14 +17,19 @@ in it are our own: their history, their writing, their way of counting, their an
 
 ## Status
 
-Pre-production. The architecture document is under review; no engine code exists yet.
-Game systems are prototyped as interactive pages and approved before they are built
-(CLAUDE.md section 3).
+Pre-production, with the first hall playable. The architecture and the world are
+approved; the Elmorian exhibit is a point and click prototype in three.js at
+`mockups/elmorian-exhibit/` that plays on a phone, its shell built in Blender from
+`data/layout/elmorian.json` (docs/BLENDER.md). Game systems are prototyped as
+interactive pages and approved before they are built (CLAUDE.md section 3).
 
 ```sh
-./scripts/check-style.sh     # no em or en dashes
-./scripts/render-proof.sh    # the engine installs, compiles C#, and draws a lit frame here
-python3 tools/render_doc.py  # regenerate docs/ARCHITECTURE.html from the Markdown
+./scripts/check-style.sh                       # no em or en dashes
+./scripts/render-proof.sh                      # the engine installs, compiles C#, and draws a lit frame here
+./scripts/build-exhibit.sh elmorian            # Blender builds the exhibit shell from the layout, headless
+python3 tools/build_mockup.py elmorian-exhibit # one self contained page from the sources
+node mockups/elmorian-exhibit/playthrough.mjs  # plays it to the end at phone size
+python3 tools/render_doc.py                    # regenerate docs/ARCHITECTURE.html from the Markdown
 ```
 
 `docs/ARCHITECTURE.html` is the review copy of the architecture document and the world

@@ -8,9 +8,16 @@
   'use strict';
 
   // ---- seeded speckle, for stone -------------------------------------------
+  // mulberry32. A linear congruential generator here put every speckle on
+  // a lattice (x from one draw, y from the next), and a lattice minified on
+  // a phone moires into square patches on the plaques.
   function rng(seed) {
-    var s = seed >>> 0 || 1;
-    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    var s = (seed >>> 0) || 1;
+    return function () {
+      s = (s + 0x6D2B79F5) >>> 0;
+      var t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
   }
   function canvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 

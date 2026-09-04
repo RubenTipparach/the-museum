@@ -50,7 +50,7 @@ def main(name):
         if "door" in w:
             a = w["door"] - dw / 2
             segs = [(0, a), (a + dw, length)]
-        col = (140, 120, 90) if "brick" in w["material"] else (150, 150, 140)
+        col = (140, 120, 90) if "relief" in w["material"] else (150, 150, 140)
         for s0, s1 in segs:
             if s1 > s0:
                 d.line([P(ax + ux * s0, az + uz * s0), P(ax + ux * s1, az + uz * s1)], fill=col, width=int(L["wallThickness"] * S))
@@ -82,10 +82,19 @@ def main(name):
         z = b[1] + t["grid"] / 2
         while z < b[3]:
             d.line([P(b[0], z), P(b[2], z)], fill=(70, 70, 70), width=1); z += t["grid"]
-    for h in F["trackHeads"]:
-        px, pz = P(h["pos"][0], h["pos"][2]); ax, az = P(h["aim"][0], h["aim"][2])
+    so = F["lighting"]["standoff"]
+    aims = [(p["pos"], p["normal"]) for p in L["plaques"]] + [(st["point"], st["normal"]) for st in L["stations"].values()]
+    for pos, n in aims:
+        px, pz = P(pos[0] + n[0] * so, pos[2] + n[2] * so); ax, az = P(pos[0], pos[2])
         d.line([(px, pz), (ax, az)], fill=(255, 230, 170), width=1)
         d.ellipse([px - 3, pz - 3, px + 3, pz + 3], outline=(255, 230, 170))
+    sp = F["stanchions"]
+    for st in L["stations"].values():
+        n = st["normal"]; c = (st["point"][0] + n[0] * sp["standoff"], st["point"][2] + n[2] * sp["standoff"])
+        t = (-n[2], n[0])
+        a = P(c[0] + t[0] * sp["halfSpan"], c[1] + t[1] * sp["halfSpan"]); b = P(c[0] - t[0] * sp["halfSpan"], c[1] - t[1] * sp["halfSpan"])
+        d.line([a, b], fill=(150, 40, 40), width=2)
+        for q in (a, b): d.ellipse([q[0] - 3, q[1] - 3, q[0] + 3, q[1] + 3], fill=(150, 40, 40))
     for k, st in L["stations"].items():
         px, pz = P(st["point"][0], st["point"][2])
         d.ellipse([px - 6, pz - 6, px + 6, pz + 6], outline=(125, 191, 208), width=2)
@@ -97,7 +106,7 @@ def main(name):
     y = 10
     for col, txt in [((217, 167, 90), "visitor path, door"), ((125, 191, 208), "puzzle station"), ((216, 211, 197), "plaque"),
                      ((120, 220, 120), "exit sign"), ((230, 80, 70), "extinguisher"), ((200, 200, 90), "staff door"),
-                     ((255, 230, 170), "track head and aim"), ((70, 70, 70), "truss grid"), ((140, 120, 90), "brick wall"), ((150, 150, 140), "painted wall")]:
+                     ((255, 230, 170), "track head and aim"), ((150, 40, 40), "stanchions"), ((70, 70, 70), "truss grid"), ((140, 120, 90), "relief wall"), ((150, 150, 140), "painted wall")]:
         d.rectangle([10, y, 20, y + 10], fill=col); d.text((26, y - 2), txt, fill=(216, 211, 197), font=small); y += 15
     d.text((10, H - 20), "north is up. %s, %d px per metre" % (name, S), fill=(146, 156, 149), font=small)
 

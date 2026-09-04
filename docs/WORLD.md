@@ -174,6 +174,36 @@ why they are cut in sixes.
 **What it gives the game:** the darkest room, the most volumetric light, and a torch
 that projects a pattern through a large crystal onto the wall.
 
+### 4.6 The Elmorians, Hall Six (approved, and the first hall built)
+
+*Not from a photograph: from the owner's brief of 2026-09-04, and the first exhibit
+prototyped, at `mockups/elmorian-exhibit/`.*
+
+A civilization that was not human, on a world that was. Green skinned, three eyes of
+three sizes (the day eye for the near, the middle for the far, and the smallest, high
+in the brow, for what stands behind), a single tentacle from the crown called the sil,
+no nose and no mouth. They fed by standing in light, which is why they were green and
+why their houses were cut into the sunrise face of an escarpment. They spoke by touch,
+sil to sil, so every conversation was private and every crowd was silent; their
+writing was the same language cut into stone and read by drawing the sil across it.
+They went to stone when they died.
+
+**Their one difference is the count itself.** One Elmorian sees three; two Elmorians
+facing each other see six, and nothing was counted by fewer eyes than that. The world's
+base six numerals are theirs, and "never count alone" is their superstition, which is
+why a museum whose halls are almost empty is a museum an Elmorian would not enter.
+
+**What they give the game:** all four puzzle kinds in one hall, on the turning path of
+four rooms an Elmorian house was built to: turn the three eyes to the door (the gaze),
+stack the light rings under the sun (the light stack), press the greeting into the
+pads (the speech), and then re-set all three to what the ancestor chamber's relief
+shows (the sixfold gaze). The greeting is light, eye, touch, door; the farewell is
+stone, dark, touch, eye, and the farewell is not the greeting reversed.
+
+Every word the hall says is in `mockups/elmorian-exhibit/lore.js` in the museum's
+label voice, and the exhibit's own architecture (rooms, doors, fixtures, where the
+lights point) is `data/layout/elmorian.json`.
+
 ## 5. What is architecture and what is a proposal
 
 **Architecture, settled, in ADR-10:** the world is data in `data/world/`; labels are
@@ -181,9 +211,10 @@ generated from it and never typed; the numeral table is read by the puzzle evalu
 rather than copied into it; `tools/verify_world.py` fails the build on a contradiction.
 None of that changes if every name below it changes.
 
-**Proposal, needing the owner's approval:** the base six, the marks on a stem, the
-vertical columns, the five halls, the names Sethu, Vann, Meridian, Kellish and vess, the
-blank sixth figure, the sealed sixth vessel, the six sockets, and the falsified ledger.
+**Approved (2026-09-04):** the whole document, and with it the base six, the marks on a
+stem, the columns, and the five halls as proposed. The Elmorians were added the same day
+and built first. What remains open is only the names, which the owner may still change
+one at a time.
 
 The fastest way to review it is to say which of the five halls is right and which is
 wrong. Names are cheap to change and structure is not, so the structural claims worth
