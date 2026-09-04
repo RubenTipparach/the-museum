@@ -1,0 +1,18 @@
+# Godot
+.godot/
+.import/
+*.import
+builds/
+.tools/
+# .NET
+bin/
+obj/
+*.user
+# Blender and Material Maker backups
+*.blend1
+*.blend2
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
