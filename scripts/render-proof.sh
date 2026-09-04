@@ -38,12 +38,9 @@ shot="$HOME/.local/share/godot/app_userdata/lightproof/forward_plus_lights.png"
 [[ -f "$shot" ]] || { echo "FAIL: screenshot not written" >&2; exit 1; }
 cp "$shot" docs/reference/forward_plus_lavapipe_proof.png
 
-# A black frame is a renderer that ran and drew nothing. Require some lit pixels.
-python3 - <<'PY'
-from PIL import Image
-im = Image.open("docs/reference/forward_plus_lavapipe_proof.png").convert("L")
-h = im.histogram(); n = sum(h); lit = sum(h[40:]) / n
-print(f"lit pixel fraction {lit:.3f} (needs > 0.02)")
-raise SystemExit(0 if lit > 0.02 else 1)
-PY
+# A black frame is a renderer that ran and drew nothing. Require some lit
+# pixels. The check is pure stdlib on purpose: it has to run wherever the
+# engine runs, and an import of Pillow here once turned a green render into a
+# red job on a runner that had every other tool and not that one.
+python3 tools/lit_fraction.py docs/reference/forward_plus_lavapipe_proof.png
 echo "PASS: docs/reference/forward_plus_lavapipe_proof.png"

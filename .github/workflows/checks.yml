@@ -21,11 +21,10 @@ jobs:
   render:
     name: The engine renders
     # Requirement 0 (docs/ARCHITECTURE.md ADR-0) is proven in the Claude Code
-    # sandbox by rule, and this job is the same proof on a runner. It is manual
-    # for now because it downloads a 106 MB editor and installs system packages,
-    # and it has not yet been observed to pass here. Move it onto pull_request
-    # the first time a manual run goes green.
-    if: github.event_name == 'workflow_dispatch'
+    # sandbox by rule, and this job is the same proof on a runner: it installs
+    # a software Vulkan driver, downloads the pinned editor, compiles the C#
+    # and draws a Forward+ frame with twelve shadow casting lights. About one
+    # minute, and it fails on a black frame.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

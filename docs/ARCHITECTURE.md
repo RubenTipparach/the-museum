@@ -91,6 +91,7 @@ outbound HTTPS through the agent proxy):
 | `xvfb-run godot --rendering-driver vulkan --rendering-method forward_plus` | started: "Vulkan 1.4.318 - Forward+ - llvmpipe (LLVM 20.1.2)" |
 | A 960x540 frame with 12 shadow casting spotlights, volumetric fog, SSAO, glow and AgX tone mapping | drawn and written to PNG, 680 ms per frame cold and 227 ms with the shader cache warm, in software |
 | The frame itself | `reference/forward_plus_lavapipe_proof.png`: twelve lit cones in fog over shadowed pedestals, 9.1 percent of pixels above black |
+| The same script on a GitHub runner | the same frame, 712 ms, so `.github/workflows/checks.yml` runs it on every pull request |
 
 ![](reference/forward_plus_lavapipe_proof.png)
 
@@ -119,6 +120,13 @@ non-negotiable, so the engine that meets it today wins.
 - Godot writes audio driver errors on a machine with no sound card. They are noise.
 - The screenshot is taken from the viewport texture on frame twelve, after shaders
   compile; a frame taken earlier is black and reads as a broken renderer.
+- **The guard has to be pure stdlib.** The first cut of the black frame check imported
+  Pillow, which is in this sandbox only because it was installed by hand, so the first
+  CI run failed with a rendered frame sitting beside it. `tools/lit_fraction.py` decodes
+  the PNG itself, and is checked against Pillow rather than trusted: byte identical RGB
+  on the proof frame, and the same 0.091 once its luma rounds and compares the way
+  Pillow's does. A guard that needs a package the thing it guards does not need will
+  fail somewhere the engine works.
 - Lightmap bakes in software will be slow. Q14 asks whether bakes are committed or
   made in CI, and this is the reason to commit them.
 
