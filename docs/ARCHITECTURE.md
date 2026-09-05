@@ -345,6 +345,14 @@ inspectable. The Godot side owns the easing: a goal and a drawn value, eased wit
 distance eased in log space because zoom is multiplicative. Both numbers come from
 `data/tuning.json` and the mockup reads the same file.
 
+**Closing a label is not leaving the object** (owner, 2026-09-05). The card's close
+button hides the words and nothing else: the camera stays where it is, so the thing can
+be looked at, and a Read button in the corner brings the label back. Back is the only
+way out, and it sits beside Read. The two share the bottom band with the room chips and
+do not both fit at 390 px, so the chips go while an object is being inspected: jumping
+rooms from inside an object is not a thing anyone does, and a control that is covered is
+a control that does not take a tap.
+
 **Inspect anchors are authored on the object,** in Blender, as named empties exported
 in the glTF: the camera position, the pivot, the allowed orbit range and which
 hotspots are visible from it. The Room's trick is that every object has a "right"

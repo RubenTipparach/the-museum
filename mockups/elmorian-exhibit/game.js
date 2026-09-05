@@ -336,7 +336,7 @@
   function roomOf(p) { for (var i = 0; i < LAY.rooms.length; i++) { var b = LAY.rooms[i].bounds; if (p[0] >= b[0] && p[0] <= b[2] && p[2] >= b[1] && p[2] <= b[3]) return LAY.rooms[i].id; } return -1; }
   function goRoom(r, instant) {
     var R = ROOMS[r], from = rig.room;
-    rig.mode = 'room'; rig.station = null; rig.room = r; hideCard(); backBtn.hidden = true;
+    rig.mode = 'room'; rig.station = null; rig.room = r; lastCard = null; hideCard(); backBtn.hidden = true; readBtn.hidden = true; document.body.classList.remove('inspecting');
     // Through the doorway first, then to the room's own place, so the camera
     // never cuts through a wall on the way.
     var door = DOORS.filter(function (d) { return (d.rooms[0] === from && d.rooms[1] === r) || (d.rooms[1] === from && d.rooms[0] === r); })[0];
@@ -359,9 +359,10 @@
     var yaw = Math.atan2(off.x, off.z), pitch = Math.asin(Math.max(-1, Math.min(1, off.y)));
     rig.anchorYaw = nearAngle(yaw, rig.yaw); rig.anchorPitch = pitch;
     setGoal(point, yaw, pitch, dist);
-    backBtn.hidden = false;
+    backBtn.hidden = false; document.body.classList.add('inspecting');
+    if (!card.hidden) readBtn.hidden = true; else readBtn.hidden = !lastCard;
   }
-  function leaveInspect() { var R = ROOMS[rig.room]; rig.mode = 'room'; rig.station = null; rig.queue = []; setGoal(R.center, R.yaw, R.pitch, roomDist(R)); hideCard(); backBtn.hidden = true; }
+  function leaveInspect() { var R = ROOMS[rig.room]; rig.mode = 'room'; rig.station = null; rig.queue = []; setGoal(R.center, R.yaw, R.pitch, roomDist(R)); lastCard = null; hideCard(); backBtn.hidden = true; readBtn.hidden = true; document.body.classList.remove('inspecting'); }
   // The distance that fits a w by h extent in the current view, capped so the
   // camera stays inside the room.
   function fitDist(w, h, cap) {
@@ -480,10 +481,19 @@
 
   // ---- HUD ------------------------------------------------------------------------------------------
   var card = document.getElementById('card'), cardTitle = document.getElementById('cardTitle'), cardText = document.getElementById('cardText');
-  var backBtn = document.getElementById('back'), hint = document.getElementById('hint'), chips = document.getElementById('chips'), toastEl = document.getElementById('toast');
-  function showCard(title, text) { cardTitle.textContent = title; cardText.innerHTML = text.split('\n\n').map(function (p) { return '<p>' + p + '</p>'; }).join(''); cardText.scrollTop = 0; card.hidden = false; }
-  function hideCard() { card.hidden = true; }
-  document.getElementById('cardClose').addEventListener('click', function () { hideCard(); if (rig.station === 'plaque') leaveInspect(); });
+  var backBtn = document.getElementById('back'), readBtn = document.getElementById('read'), hint = document.getElementById('hint'), chips = document.getElementById('chips'), toastEl = document.getElementById('toast');
+  // Closing the label is not leaving the object: the camera stays where it is
+  // so the thing can be looked at, and Read brings the label back. Back is
+  // the only way out, and it is next to it.
+  var lastCard = null;
+  function showCard(title, text) {
+    lastCard = { title: title, text: text };
+    cardTitle.textContent = title; cardText.innerHTML = text.split('\n\n').map(function (p) { return '<p>' + p + '</p>'; }).join('');
+    cardText.scrollTop = 0; card.hidden = false; readBtn.hidden = true;
+  }
+  function hideCard() { card.hidden = true; readBtn.hidden = !(lastCard && rig.mode === 'inspect'); }
+  document.getElementById('cardClose').addEventListener('click', hideCard);
+  readBtn.addEventListener('click', function () { if (lastCard) showCard(lastCard.title, lastCard.text); });
   backBtn.addEventListener('click', leaveInspect);
   var toastT = 0; function toast(s) { toastEl.textContent = s; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('on'); }, 2200); }
   function chip(i) {
