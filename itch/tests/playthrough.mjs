@@ -92,7 +92,7 @@ async function shot(name) { await page.screenshot({ path: path.join(root, 'docs'
 try {
   await settle();
   ok((await state()).room === 0, 'starts in the forecourt');
-  await tap(size.width / 2, size.height * 0.55);   // the first touch wakes the page, on the floor
+  await tap(size.width / 2, size.height - 120);   // the first touch wakes the page, on the floor in front
   ok((await state()).room === 0 && !(await state()).card, 'a tap on nothing does nothing');
   await shot('forecourt');
 

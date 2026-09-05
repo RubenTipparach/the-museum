@@ -66,5 +66,7 @@
       "range": 9,
       "angle": 35
     }
-  }
+  },
+  "tapFrames": 4,
+  "_tap": "A touch is a tap if it is released within tapMs, or within tapFrames frames of its press: on a slow renderer a press and its release land in consecutive frames however quick the finger was, and a frame can be longer than tapMs."
 }

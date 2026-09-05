@@ -25,6 +25,7 @@ var bridge: DebugBridge
 var pointers: Dictionary = {}
 var drag: Dictionary = {}
 var pinch_d := 0.0
+var counts := {"touches": 0, "releases": 0, "taps": 0, "last": ""}   # observed by the playthrough
 
 
 func _ready() -> void:
@@ -146,11 +147,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _touch(e: InputEventScreenTouch) -> void:
+	counts["touches" if e.pressed else "releases"] += 1
 	if e.pressed:
 		pointers[e.index] = e.position
 		if pointers.size() == 1:
 			drag = {"x": e.position.x, "y": e.position.y, "sx": e.position.x, "sy": e.position.y,
-					"t": Time.get_ticks_msec(), "moved": false}
+					"t": Time.get_ticks_msec(), "frame": Engine.get_process_frames(), "moved": false}
 		elif pointers.size() == 2:
 			var ps := pointers.values()
 			pinch_d = (ps[0] as Vector2).distance_to(ps[1])
@@ -159,8 +161,17 @@ func _touch(e: InputEventScreenTouch) -> void:
 		return
 	var was := pointers.has(e.index)
 	pointers.erase(e.index)
-	if not drag.is_empty() and was and not drag["moved"] and Time.get_ticks_msec() - int(drag["t"]) < int(T["tapMs"]):
-		tap(e.position)
+	# A tap is a quick touch: released within tapMs, or within tapFrames frames
+	# of its press. The second clause is for a slow renderer, where the browser
+	# holds the release until the frame that took the press has finished, so
+	# the two land a whole frame apart however quick the finger was.
+	if not drag.is_empty() and was and not drag["moved"]:
+		var held := Time.get_ticks_msec() - int(drag["t"])
+		var frames := Engine.get_process_frames() - int(drag["frame"])
+		counts["hold_ms"] = held
+		counts["frames"] = frames
+		if held < int(T["tapMs"]) or frames <= int(T["tapFrames"]):
+			tap(e.position)
 	if pointers.is_empty():
 		drag = {}
 		pinch_d = 0.0
@@ -192,6 +203,8 @@ func _drag(e: InputEventScreenDrag) -> void:
 func tap(pos: Vector2) -> void:
 	hud.hint_gone()
 	var h := Interaction.resolve(rig.camera, pos, T)
+	counts["taps"] += 1
+	counts["last"] = h.get("kind", "nothing")
 	if h.is_empty() or h["kind"] == "solid":
 		if rig.mode == "inspect":
 			leave_inspect()
@@ -381,7 +394,8 @@ func _load() -> bool:
 func debug_state() -> Dictionary:
 	return {"room": rig.room, "mode": rig.mode, "station": rig.station, "arrived": rig.arrived(),
 			"open": x.open, "gaze": x.gaze.pos, "pegs": x.stack.pegs, "held": x.stack.held, "last": x.speech.last,
-			"card": hud.card_visible(), "size": [get_viewport().get_visible_rect().size.x, get_viewport().get_visible_rect().size.y]}
+			"card": hud.card_visible(), "size": [get_viewport().get_visible_rect().size.x, get_viewport().get_visible_rect().size.y],
+			"counts": counts}
 
 
 func screen_of(kind: String, i, id: String) -> Variant:

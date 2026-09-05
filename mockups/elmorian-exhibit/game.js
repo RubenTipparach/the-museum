@@ -438,7 +438,9 @@
     canvasEl.setPointerCapture(e.pointerId);
     pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
     var n = Object.keys(pointers).length;
-    if (n === 1) drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false };
+    // The event's own time, not the time it was handled: on a slow frame the
+    // release is handled long after the finger lifted.
+    if (n === 1) drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: e.timeStamp, moved: false };
     if (n === 2) { var ps = Object.values(pointers); pinchD = Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y); drag = null; }
     audio.wake();
   });
@@ -464,7 +466,7 @@
   });
   function endPointer(e) {
     var was = pointers[e.pointerId]; delete pointers[e.pointerId];
-    if (drag && was && !drag.moved && performance.now() - drag.t < T.tapMs) tap(e.clientX, e.clientY);
+    if (drag && was && !drag.moved && e.timeStamp - drag.t < T.tapMs) tap(e.clientX, e.clientY);
     if (!Object.keys(pointers).length) { drag = null; pinchD = 0; }
   }
   canvasEl.addEventListener('pointerup', endPointer); canvasEl.addEventListener('pointercancel', endPointer);

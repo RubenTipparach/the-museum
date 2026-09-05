@@ -800,6 +800,13 @@ Chromium; slow, and only ever a proof of what is drawn, CLAUDE.md 10):
 
 **What was learned.** A press and release in the same instant is not a tap the page
 sees, so the harness holds a finger down for 70 ms, which is also what a finger does.
+And a tap threshold in wall time cannot tell a quick touch from a long press on a slow
+renderer: the browser withholds a touch's release until the frame that took its press
+has finished, so under software rendering every touch measured 460 to 700 ms, one
+frame, and the touch playthrough could not turn a dial. A touch is now a tap if it is
+released within `tapMs` or within `tapFrames` frames of its press (`data/tuning.json`),
+and the prototype times its taps from the event's own timestamp rather than from the
+moment it got round to handling it.
 The shell's collision landed on the first try because it is derived from the mesh
 rather than authored beside it. And the one bug the port found was the prototype's:
 the view was only applied on a restore, so a fresh start showed the stones and the
