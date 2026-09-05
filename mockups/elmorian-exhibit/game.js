@@ -247,6 +247,20 @@
     }
   }
 
+  // Where a mesh actually is. The shell's meshes carry their world position
+  // in their vertices (the text payload bakes each part's transform in), so
+  // a shell mesh's own position is the origin and reading it points at the
+  // middle of the museum. Anything that needs a location asks the geometry.
+  function centreOf(m) {
+    var v = new THREE.Vector3();
+    if (m.geometry) {
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      m.geometry.boundingBox.getCenter(v);
+      m.localToWorld(v);
+    } else { m.getWorldPosition(v); }
+    return v;
+  }
+
   function box(w, h, d, mat, x, y, z, ry) {
     var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry;
     scene.add(m); return m;
@@ -480,7 +494,7 @@
         if (!X.open[u.i]) { showCard(L.doors[u.i].title, L.doors[u.i].text); shake(d.mesh); audio.thud(); return; }
         var to = d.rooms[0] === rig.room ? d.rooms[1] : d.rooms[0]; goRoom(to); audio.step(); break;
       }
-      case 'plaque': showCard(L.plaques[u.id].title, L.plaques[u.id].text); inspect(h.object.position, u.normal, fitDist(1.5, 1.1, 4), 'plaque'); audio.click(); break;
+      case 'plaque': showCard(L.plaques[u.id].title, L.plaques[u.id].text); inspect(centreOf(h.object), u.normal, fitDist(1.5, 1.1, 4), 'plaque'); audio.click(); break;
       case 'stone': showCard('Seeing stone', 'It shows a room behind you as that room stands now.'); goStation('final'); audio.click(); break;
       case 'eye':
         if (rig.station !== 'gaze') { goStation('gaze'); audio.click(); break; }
@@ -639,7 +653,7 @@
   function screenOf(kind, i) {
     var m = interact.filter(function (o) { return o.userData.kind === kind && (i === undefined || o.userData.i === i || o.userData.peg === i || o.userData.id === i); })[0];
     if (!m) return null;
-    var v = new THREE.Vector3(); m.getWorldPosition(v); v.project(camera);
+    var v = centreOf(m); v.project(camera);
     return { x: (v.x + 1) / 2 * window.innerWidth, y: (1 - v.y) / 2 * window.innerHeight, z: v.z };
   }
   // What a tap at (x, y) would land on, nearest first: names, kinds, distances.
