@@ -16,3 +16,4 @@ obj/
 Thumbs.db
 .vscode/
 .idea/
+node_modules

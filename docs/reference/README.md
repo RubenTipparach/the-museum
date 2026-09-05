@@ -4,15 +4,21 @@ Eight photographs the owner took in a natural history museum on 4 September 2026
 downscaled to 1400 px and stripped of their metadata (the originals carried GPS
 coordinates, which do not belong in a repository). They are DESIGN REFERENCES: what a
 case looks like, how it is lit, what a label says, how glass sits between the visitor
-and the thing. Nothing in them is reproduced in the game. Everything the game shows is
-an original reinterpretation, and the premise (an alien recreation that is almost
-right) is the reason it may be wrong. See `docs/ARCHITECTURE.md` question 11.
+and the thing. **Nothing in them is reproduced in the game, and nothing in them is
+reinterpreted either.** The owner's decision (2026-09-04) is that the museum holds our
+own invented civilizations and animals, in the manner of Riven: eerily close to Earth's
+and not quite them. So each photograph below is a QUESTION about a case, and
+[`../WORLD.md`](../WORLD.md) is the answer about what is in it. No real culture, object,
+label text or donor appears in the game.
 
 Each photo is read twice below: what is THERE, which is what the environment artist
-needs, and what it SUGGESTS, which is a puzzle seed in the ADR-5 kinds. Seeds are
-seeds; every one still needs an interactive prototype before it is built.
+needs, and what it SUGGESTS, which is a puzzle seed in the ADR-5 kinds. The invented
+culture each one becomes is named beside it, and is specified in `../WORLD.md`. Seeds
+are seeds; every one still needs an interactive prototype before it is built.
 
 ## 01. The men's house carvings
+
+*Becomes: the Sethu of the ash delta (`WORLD.md` 4.1).*
 
 ![](photos/01-mens-house-carvings.jpg)
 
@@ -33,6 +39,8 @@ layer: the big mask's eyes are dials.
 
 ## 02. The display house of memorials
 
+*Becomes: the Sethu memorial house, where a group of six carries one blank figure (`WORLD.md` 4.1).*
+
 ![](photos/02-display-house-memorials.jpg)
 
 **There.** A long low case under a leaf thatch roof, back wall of palm fronds, sand
@@ -49,6 +57,8 @@ museum changes behind you.
 
 ## 03. The ancestor post and the whirling slats
 
+*Becomes: the Sethu voice hall (`WORLD.md` 4.1).*
+
 ![](photos/03-ancestor-post-and-whirling-slats.jpg)
 
 **There.** A freestanding tall case beside a log post: a massive dark ancestor post
@@ -64,6 +74,8 @@ ancestor post's faces open their eyes one by one. The sound design puzzle, and t
 that needs question 9 answered.
 
 ## 04. The tyrannosaur skull
+
+*Becomes: the kellish predator, six teeth in the front of the jaw (`WORLD.md` 4.4).*
 
 ![](photos/04-tyrannosaur-skull.jpg)
 
@@ -82,6 +94,8 @@ building up.
 
 ## 05. The trilobite table
 
+*Becomes: the vess, six eyes in two arcs of three (`WORLD.md` 4.4).*
+
 ![](photos/05-trilobite-table.jpg)
 
 **There.** A round table under glass, backlit blue, forty or so trilobite fossils on
@@ -96,6 +110,8 @@ rotates in inspect mode; reading it right lights the specimens that could see, a
 they all turn to look at the same point on the ceiling.
 
 ## 06. The bronze altar set
+
+*Becomes: a Vann altar set of six, the sixth sealed (`WORLD.md` 4.2).*
 
 ![](photos/06-bronze-altar-set.jpg)
 
@@ -114,6 +130,8 @@ hint, carved with the set in its proper arrangement.
 
 ## 07. The plantation diorama
 
+*Becomes: the Meridian Concession, and its ledger that does not add up (`WORLD.md` 4.3).*
+
 ![](photos/07-plantation-diorama.jpg)
 
 **There.** A large scale model behind glass: a drying yard with tiny workers raking
@@ -129,6 +147,8 @@ be read from inside. The diorama is also the one place ADR-7's scatter exception
 expected to be used, for the shrubs.
 
 ## 08. The emerald case
+
+*Becomes: the mineral hall, the one place closest to Earth (`WORLD.md` 4.5).*
 
 ![](photos/08-emerald-case.jpg)
 
