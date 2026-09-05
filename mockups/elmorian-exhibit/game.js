@@ -42,6 +42,10 @@
   var lampA = new THREE.PointLight(0xffd7a3, 10, 11, 2); scene.add(lampA);
   var SPOTS = 5, spots = [];
   for (var si = 0; si < SPOTS; si++) { var sp = new THREE.SpotLight(0xfff0d0, 0, 12, 0.5, 0.6, 1.4); scene.add(sp); scene.add(sp.target); spots.push(sp); }
+  // Two more for the door lamps: a room has at most two doors, and a small
+  // coloured wash on the jamb is what makes the state read from across it.
+  var doorLights = [new THREE.PointLight(0x000000, 0, 1.9, 2), new THREE.PointLight(0x000000, 0, 1.9, 2)];
+  doorLights.forEach(function (l) { scene.add(l); });
   var LAY = window.LAYOUT, TEX = window.TEXTURES;
 
   // ---- textures and materials ------------------------------------------------------
@@ -151,6 +155,45 @@
   plaque('cliff', -10.6, 2.0, -1.0, [0, 0, -1]); plaque('stack', -8.4, 2.0, -1.0, [0, 0, -1]); plaque('drink', -6.2, 2.0, -1.0, [0, 0, -1]);
   plaque('touch', -9.5, 2.0, -17.4, [0, 0, 1]); plaque('greet', -7.3, 2.0, -17.4, [0, 0, 1]);
   plaque('ancestors', -2.4, 2.0, -9.4, [0, 0, -1]); plaque('six', 0, 2.0, -9.4, [0, 0, -1]); plaque('farewell', 2.4, 2.0, -9.4, [0, 0, -1]);
+
+  // ---- door lamps: green on the way on, red on the way back --------------------
+  // Green means this door has opened and leads deeper; red means it goes back
+  // the way you came; dark means it is still shut. One disc on each side of the
+  // opening, because a door is a fact in both rooms.
+  var LAMP = { green: 0x2fe06a, red: 0xe0392f, off: 0x1a1c18 };
+  var lampMats = {};
+  function lampMat(kind) {
+    if (!lampMats[kind]) lampMats[kind] = new THREE.MeshStandardMaterial({ color: 0x101210, emissive: LAMP[kind], emissiveIntensity: kind === 'off' ? 0.04 : 0.75, roughness: 0.4 });
+    return lampMats[kind];
+  }
+  DOORS.forEach(function (d) {
+    d.lamps = [1, -1].map(function (side) {
+      var m = new THREE.Mesh(new THREE.CircleGeometry(0.06, 20), lampMat('off'));
+      var out = d.axis === 'x' ? V3(0, 0, side) : V3(side, 0, 0);
+      m.position.set(d.pos.x + out.x * 0.21, T.doorH + 0.16, d.pos.z + out.z * 0.21);
+      m.lookAt(m.position.clone().add(out));
+      scene.add(m); return m;
+    });
+  });
+  function refreshDoorLamps() {
+    var lit = [];
+    DOORS.forEach(function (d, i) {
+      // rooms[0] is always the nearer room, so from rooms[0] this door leads on.
+      var kind = d.rooms.indexOf(rig.room) < 0 ? 'off'
+               : d.rooms[1] === rig.room ? 'red'
+               : X.open[i] ? 'green' : 'off';
+      d.lamps.forEach(function (m) { m.material = lampMat(kind); });
+      if (kind !== 'off' && lit.length < doorLights.length) lit.push([d, kind]);
+    });
+    doorLights.forEach(function (l, k) {
+      if (!lit[k]) { l.intensity = 0; return; }
+      var d = lit[k][0], out = d.axis === 'x' ? V3(0, 0, 1) : V3(1, 0, 0);
+      var toward = ROOMS[rig.room].center.clone().sub(d.pos); toward.y = 0;
+      var sgn = toward.dot(out) >= 0 ? 1 : -1;
+      l.position.set(d.pos.x + out.x * sgn * 0.45, T.doorH + 0.05, d.pos.z + out.z * sgn * 0.45);
+      l.color.setHex(LAMP[lit[k][1]]); l.intensity = 0.85;
+    });
+  }
 
   function box(w, h, d, mat, x, y, z, ry) {
     var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry;
@@ -289,7 +332,7 @@
     rig.queue.push({ target: R.center, yaw: R.yaw, pitch: R.pitch, dist: roomDist(R) });
     var g = rig.queue.shift(); setGoal(g.target, g.yaw, g.pitch, g.dist);
     if (instant) { rig.target.copy(rig.goal.target); rig.yaw = rig.goal.yaw; rig.pitch = rig.goal.pitch; rig.dist = rig.goal.dist; }
-    placeLights(r); updateHud(); save();
+    placeLights(r); refreshDoorLamps(); updateHud(); save();
     if (r === 5) setTimeout(function () { if (rig.room === 5) showCard(L.end.title, L.end.text); }, 1400);
   }
   function inspect(point, normal, dist, station) {
@@ -360,7 +403,10 @@
     hint.classList.add('gone');
     ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
-    var hits = ray.intersectObjects(interact.concat(solids), false).filter(function (h) { return h.distance > 0.5; });
+    // A hit closer than half a metre is something the camera stands in. A
+    // doorway closer than a metre and a bit is one the camera is passing
+    // through, not one being chosen: tapping it would walk straight back out.
+    var hits = ray.intersectObjects(interact.concat(solids), false).filter(function (h) { return h.distance > (h.object.userData.kind === 'doorway' ? 1.2 : 0.5); });
     if (!hits.length) { if (rig.mode === 'inspect') leaveInspect(); return; }
     var h = hits[0], u = h.object.userData;
     if (!u.kind) { if (rig.mode === 'inspect') leaveInspect(); return; }
@@ -407,7 +453,7 @@
 
   var wasOpen = X.open.slice();
   function afterChange() {
-    P.refreshDoors(X); refreshStones(); save();
+    P.refreshDoors(X); refreshStones(); refreshDoorLamps(); save();
     X.open.forEach(function (o, i) { if (o && !wasOpen[i]) { audio.doorChime(); toast(i === 4 ? 'The ancestor door opens' : 'A door opens'); } });
     wasOpen = X.open.slice(); updateHud();
   }
@@ -516,7 +562,12 @@
     var v = new THREE.Vector3(); m.getWorldPosition(v); v.project(camera);
     return { x: (v.x + 1) / 2 * window.innerWidth, y: (1 - v.y) / 2 * window.innerHeight, z: v.z };
   }
-  window.ftDebug = { exhibit: X, rig: rig, rooms: ROOMS, screenOf: screenOf, pads: pads, rings: rings, eyes: eyeDiscs, stones: stones, doors: DOORS, renderer: renderer,
+  // What a tap at (x, y) would land on, nearest first: names, kinds, distances.
+  function hitAt(x, y) {
+    ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+    return ray.intersectObjects(interact.concat(solids), false).slice(0, 4).map(function (h) { return { name: h.object.name, kind: h.object.userData.kind, d: +h.distance.toFixed(2) }; });
+  }
+  window.ftDebug = { exhibit: X, rig: rig, rooms: ROOMS, screenOf: screenOf, hitAt: hitAt, pads: pads, rings: rings, eyes: eyeDiscs, stones: stones, doors: DOORS, renderer: renderer,
                      // navigation only, for taking pictures; a playthrough taps
                      goRoom: goRoom, goStation: goStation };
 })();

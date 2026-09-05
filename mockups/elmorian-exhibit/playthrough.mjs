@@ -29,7 +29,15 @@ let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks++; console.log('  ok  ' + m); };
 const state = () => page.evaluate(() => ({ open: ftDebug.exhibit.open.slice(), gaze: ftDebug.exhibit.gaze.pos.slice(), pegs: JSON.parse(JSON.stringify(ftDebug.exhibit.stack.pegs)), last: ftDebug.exhibit.speech.last, room: ftDebug.rig.room, mode: ftDebug.rig.mode, station: ftDebug.rig.station }));
 const where = (kind, i) => page.evaluate(([k, i]) => ftDebug.screenOf(k, i), [kind, i]);
-const settle = () => page.waitForTimeout(900);
+// Wait as a player does: until the camera has arrived, not for a fixed time.
+const settle = async () => {
+  await page.waitForTimeout(250);
+  for (let i = 0; i < 24; i++) {
+    const there = await page.evaluate(() => ftDebug.rig.queue.length === 0 && ftDebug.rig.target.distanceTo(ftDebug.rig.goal.target) < 0.03 && Math.abs(ftDebug.rig.yaw - ftDebug.rig.goal.yaw) < 0.01);
+    if (there) return;
+    await page.waitForTimeout(250);
+  }
+};
 async function tapAt(x, y) { await page.touchscreen.tap(x, y); await settle(); }
 async function tapThing(kind, i) {
   const p = await where(kind, i);

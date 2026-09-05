@@ -106,6 +106,14 @@ each instance stands and which way it faces. The Blender build instances them; s
 does the engine. A fixture added by hand to one room is a fixture the other rooms do
 not have.
 
+## 6a. The vines, and where generation is allowed to reach
+
+The one generator in the build (`blenderlib.vines`, listed in ADR-7) climbs a feature
+wall from its foot by a seeded random walk. It is given the puzzle's own extent on
+that wall as a keep out box and turns away from it, because the first build grew a
+vine straight across the middle eye: a generator that can reach the puzzle is a
+generator that will, and the layout, not the seed, is what says where the puzzle is.
+
 ## 7. Export, and the proof
 
 - **glTF binary**, `export_apply=True`, Y up, tangents on, materials exported by

@@ -266,6 +266,13 @@ invalidated by every format change.
 | **Dynamic, budgeted** | The player's torch, flickers, anything a puzzle switches, anything that moves | Real time lights, bake mode Dynamic. A written budget: at most 8 shadow casting and 32 unshadowed on screen, and a shadow atlas the budget is sized against | The whole runtime light budget |
 | **Volumetric** | The haze every light sits in | Forward+ volumetric fog, per room density, per light fog energy. The player's torch gets the highest, because a cone in dust is the game's signature image | One pass, resolution scaled by the ladder |
 
+**Door state is light, not a label.** A green lamp over a door means it has opened and
+leads on; a red one means it goes back the way you came; dark means it is still shut
+(owner, 2026-09-04). It reads from across a room, in a game with no words on the screen,
+and it costs two lights: a room has at most two doors, so the pool carries two and moves
+them. The lamp discs are on both sides of every opening, because a door is a fact in
+both rooms.
+
 **Rooms whose lighting changes as a puzzle are the interesting case,** and Q5 asks how
 many there are. A lightmap holds one state. The options, in order of preference:
 
