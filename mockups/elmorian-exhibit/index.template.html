@@ -61,12 +61,11 @@
   <div id="hint">Drag to look. Tap to touch.</div>
   <div id="toast"></div>
 </div>
-<!-- three.js r158 and two of its examples, MIT, vendored: see vendor/LICENSE -->
+<!-- three.js r158, MIT, vendored: see vendor/LICENSE -->
 <script>{{THREE}}</script>
-<script>{{BGU}}</script>
-<script>{{GLTF}}</script>
-<!-- the shell from assets/exhibit/elmorian.glb, the layout from data/layout, the textures from assets/textures -->
-<script>window.SHELL_GLB = "{{GLB}}"; window.LAYOUT = {{LAYOUT}}; window.TEXTURES = {{TEXTURES}};</script>
+<!-- the shell, converted from assets/exhibit/elmorian.glb to text by tools/glb_to_json.py;
+     the layout from data/layout; the textures from assets/textures -->
+<script>window.SHELL = {{SHELL}}; window.LAYOUT = {{LAYOUT}}; window.TEXTURES = {{TEXTURES}};</script>
 <script>{{PUZZLES}}</script>
 <script>{{ART}}</script>
 <script>{{LORE}}</script>

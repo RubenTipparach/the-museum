@@ -50,6 +50,12 @@ prototyped here, then they are built.
 - **One self contained HTML file per mockup**, at `mockups/<slug>/index.html`, and
   published as an artifact so it can be opened. No network: no CDN scripts, no remote
   fonts, no fetch. Vendor and inline everything.
+- **Nothing binary is embedded, only text and images.** A prototype that carries a
+  model, an archive or any other binary file inside it is a prototype the artifact
+  share review refuses, so it cannot be sent to anyone: it fails with "the latest
+  version embeds a file type that can't be reviewed for public sharing". Assets travel
+  as text (`tools/glb_to_json.py` is how the exhibit shell does it) or as images, which
+  are reviewable. The committed asset stays binary; the page gets a build product.
 - **A prototype is interactive, not a picture.** A camera transition is approved by
   dragging it; a puzzle is approved by solving it. A description, a number or a
   static frame is not something anybody can judge feel from.

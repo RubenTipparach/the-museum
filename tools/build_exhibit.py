@@ -88,6 +88,15 @@ for w in L["walls"]:
         coord = mid[1] if edge[1] == "z" else mid[0]
         if abs(coord - edge[0]) > 0.05:
             continue
+        # ... and it has to be THIS room's wall. Two rooms share a line: the
+        # north walls of the gaze and the stack both run along z = -9.2, so
+        # matching on the perpendicular coordinate alone made every feature
+        # wall match twice and built every vine twice, one set exactly on top
+        # of the other. The wall's midpoint must lie across the room as well.
+        across = mid[0] if edge[1] == "z" else mid[1]
+        lo_a, hi_a = (b[0], b[2]) if edge[1] == "z" else (b[1], b[3])
+        if not (lo_a <= across <= hi_a):
+            continue
         # the run of the face inside the room
         lo, hi = (b[0], b[2]) if edge[1] == "z" else (b[1], b[3])
         n = (want[0], want[1])

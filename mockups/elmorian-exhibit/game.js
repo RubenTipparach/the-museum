@@ -85,25 +85,59 @@
   var solids = [];    // what a tap ray can stop on
   var shellByName = {};
   var plaqueMeshes = {};
-  (function loadShell() {
-    var bytes = Uint8Array.from(atob(window.SHELL_GLB), function (c) { return c.charCodeAt(0); });
-    var loader = new window.GLTFLoaderModule.GLTFLoader();
-    loader.parse(bytes.buffer, '', function (gltf) {
-      gltf.scene.traverse(function (o) {
-        if (!o.isMesh) return;
-        var role = o.material && o.material.name;
-        o.material = roleMat(role || 'mat_stone_paving');
-        shellByName[o.name] = o;
-        if (/^door_\d+_slab$/.test(o.name)) { var i = +o.name.split('_')[1]; DOORS[i].mesh = o; DOORS[i].closedY = o.position.y; DOORS[i].openY = o.position.y - T.doorH - 0.1; mark(o, { kind: 'door', i: i }); }
-        else if (o.name.indexOf('plaque_') === 0) { plaqueMeshes[o.name.slice(7)] = o; }
-        else if (o.name === 'sign_hall') { o.material = signMat; }
-        else if (o.name.indexOf('vines_') < 0) solids.push(o);
-      });
-      scene.add(gltf.scene);
-      DOORS.forEach(function (d, i) { if (d.mesh && X.open[i]) d.mesh.position.y = d.openY; });
-      Object.keys(plaqueMeshes).forEach(function (id) { var m = plaqueMeshes[id]; m.material = plaqueMat(id); mark(m, { kind: 'plaque', id: id, normal: plaqueNormal(id) }); });
-    }, function (err) { console.error('shell failed to load', err); });
-  })();
+  // Called once the door table and the room list exist, further down: the
+  // glTF load this replaced was asynchronous, so it happened to run after
+  // them. A synchronous build has to be placed rather than trusted to luck.
+  function buildShell() {
+    // The shell arrives as quantized integers rather than a binary model
+    // (tools/glb_to_json.py says why). Positions decode against one box for
+    // the whole museum, texture coordinates against each part's own, and the
+    // normals are computed here: the exporter splits vertices at every hard
+    // edge, so computing them gives back the faceting it authored.
+    var S = window.SHELL, pb = S.pb, root = new THREE.Group();
+    S.parts.forEach(function (part) {
+      var geo = new THREE.BufferGeometry();
+      var p = part.p, pos = new Float32Array(p.length);
+      for (var i = 0; i < p.length; i += 3) {
+        pos[i] = pb[0] + p[i] / 65535 * pb[3];
+        pos[i + 1] = pb[1] + p[i + 1] / 65535 * pb[4];
+        pos[i + 2] = pb[2] + p[i + 2] / 65535 * pb[5];
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      if (part.t) {
+        var t = part.t, ub = part.ub, uv = new Float32Array(t.length);
+        for (var j = 0; j < t.length; j += 2) {
+          uv[j] = ub[0] + t[j] / 65535 * ub[2];
+          uv[j + 1] = ub[1] + t[j + 1] / 65535 * ub[3];
+        }
+        geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      }
+      geo.setIndex(part.i);
+      geo.computeVertexNormals();
+      var o = new THREE.Mesh(geo, roleMat(part.m || 'mat_stone_paving'));
+      // A mesh split across two materials exports as two parts; they share a
+      // name and the second carries a #1, so match on the name itself.
+      var name = part.n.split('#')[0];
+      o.name = name;
+      root.add(o);
+      shellByName[name] = o;
+      var door = /^door_(\d+)_slab$/.exec(name);
+      if (door) {
+        var i2 = +door[1];
+        DOORS[i2].mesh = o; DOORS[i2].closedY = 0; DOORS[i2].openY = -T.doorH - 0.1;
+        mark(o, { kind: 'door', i: i2 });
+      } else if (name.indexOf('plaque_') === 0) { plaqueMeshes[name.slice(7)] = o; }
+      else if (name === 'sign_hall') { o.material = signMat; }
+      else if (name.indexOf('vines_') < 0) solids.push(o);
+    });
+    scene.add(root);
+    DOORS.forEach(function (d, i) { if (d.mesh && X.open[i]) d.mesh.position.y = d.openY; });
+    Object.keys(plaqueMeshes).forEach(function (id) {
+      var m = plaqueMeshes[id];
+      m.material = plaqueMat(id);
+      mark(m, { kind: 'plaque', id: id, normal: plaqueNormal(id) });
+    });
+  }
   var signTex = tex(A.sign(512, 200, [L.hall, 'The Elmorians'])); signTex.flipY = false; signTex.needsUpdate = true;
   var signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.8 });
   var cache = {};
@@ -591,6 +625,7 @@
     requestAnimationFrame(frame);
   }
 
+  buildShell();
   if (!load()) goRoom(0, true);
   requestAnimationFrame(frame);
 

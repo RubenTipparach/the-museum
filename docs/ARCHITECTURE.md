@@ -680,10 +680,26 @@ over its budget, and UV stretch outside the band. Its first run refused the faca
 27 percent stretched face that turned out to be a bevel strip, which is recorded in the
 doc as the exemption it earned.
 
-**The prototype loads the result.** The `.glb` and the texture set are embedded in the
-mockup page by `tools/build_mockup.py`, materials bound by role name, and the
-prototype's own light pool puts a spot on every plaque from the same standoff the
-Blender heads use. The plaque planes, door slabs and the hall sign are found in the
+**A feature wall has to be its own room's.** The build matched one by the perpendicular
+coordinate alone, and the north walls of the gaze and the stack both run along z = -9.2,
+so every feature wall matched twice and every vine was grown twice, one set exactly on
+top of the other: 15,472 duplicate triangles, a quarter of the shell, and z fighting
+wherever a leaf met its twin. The test takes the wall's midpoint across the room as
+well. 60,848 triangles to 45,376.
+
+**The prototype loads the result, as text.** The texture set is embedded as images and
+the shell as quantized integers in JSON, converted from the committed `.glb` by
+`tools/glb_to_json.py`; materials are bound by role name, and the prototype's own light
+pool puts a spot on every plaque from the same standoff the Blender heads use.
+
+The shell was embedded as base64 of the `.glb` first, and that was a defect rather than
+a detail: a page carrying a binary model cannot be shared, because the artifact review
+cannot review a file type it cannot read. Text is also smaller here. Positions and
+texture coordinates are 16 bit fixed point (under half a millimetre across a 25 metre
+museum), and normals are left out because the exporter splits vertices at every hard
+edge, so `computeVertexNormals` gives the authored faceting back: 2.84 MB of JSON
+against 5.06 MB of base64, and the page fell from 6.36 MB to 4.00 MB with the two
+glTF loader modules no longer needed. The plaque planes, door slabs and the hall sign are found in the
 shell by name; the puzzles stay the prototype's own until they become props.
 
 **Textures** are the declared stopgap, `tools/gen_museum_textures.py`, because Material
