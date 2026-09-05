@@ -5,8 +5,11 @@ museum. The halls are almost right. The artifacts are not. Puzzles in the tradit
 *Myst* and *Riven*, inspected the way *The Room* inspects an object, lit like a public
 building after hours.
 
-Desktop, Godot 4.7 Forward+ with C#, keyboard and mouse and a gamepad. The civilizations
-in it are our own: their history, their writing, their way of counting, their animals.
+Two tracks (docs/ARCHITECTURE.md ADR-14). The itch track, built first, is Godot 4.7
+GDScript exported to the Web and played in a browser or on a phone at
+https://ruben-tipparach.itch.io/the-museum. The desktop track, Godot 4.7 Forward+ with
+C#, keyboard and mouse and a gamepad, is deferred. The civilizations in it are our
+own: their history, their writing, their way of counting, their animals.
 
 | Doc | Contents |
 |---|---|
@@ -17,17 +20,22 @@ in it are our own: their history, their writing, their way of counting, their an
 
 ## Status
 
-Pre-production, with the first hall playable. The architecture and the world are
-approved; the Elmorian exhibit is a point and click prototype in three.js at
-`mockups/elmorian-exhibit/` that plays on a phone, its shell built in Blender from
-`data/layout/elmorian.json` (docs/BLENDER.md). Game systems are prototyped as
-interactive pages and approved before they are built (CLAUDE.md section 3).
+Pre-production, with the first hall playable twice over. The architecture and the world
+are approved; the Elmorian exhibit was approved as a point and click prototype in
+three.js at `mockups/elmorian-exhibit/` that plays on a phone, and is now built in
+Godot at `itch/` (see `itch/README.md`), its shell and props built in Blender from
+`data/layout/elmorian.json` (docs/BLENDER.md), its sounds and its score from the
+ADR-12 pipeline. Game systems are prototyped as interactive pages and approved
+before they are built (CLAUDE.md section 3).
 
 ```sh
 ./scripts/check-style.sh                       # no em or en dashes
 ./scripts/render-proof.sh                      # the engine installs, compiles C#, and draws a lit frame here
 ./scripts/build-exhibit.sh elmorian            # Blender builds the exhibit shell from the layout, headless
 python3 tools/build_mockup.py elmorian-exhibit # one self contained page from the sources
+./scripts/run-tests.sh                         # the itch track: puzzles headless, every room rendered
+./scripts/build.sh && ./scripts/verify-build.sh   # the Web export, booted in headless Chromium
+node itch/tests/playthrough.mjs                # and played to its end at phone size
 node mockups/elmorian-exhibit/playthrough.mjs  # plays it to the end at phone size
 python3 tools/render_doc.py                    # regenerate docs/ARCHITECTURE.html from the Markdown
 ```

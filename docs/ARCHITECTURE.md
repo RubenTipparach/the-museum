@@ -710,6 +710,108 @@ dimension a power of two.
 
 ---
 
+## ADR-14: Two tracks, and the itch one is built first
+
+**Decision (the owner's, 2026-09-05):** "fall back on our ambitions. spin off two
+projects. the itch-prototype using gd script for web, and we'll deal with the desktop
+version later. for now get the big itch version implemented." So the repository holds
+two Godot projects side by side, sharing everything that is not engine code:
+
+| Track | Where | Engine | Renderer | Ships to | State |
+|---|---|---|---|---|---|
+| **itch** | `itch/` | Godot 4.7.1 standard, GDScript | GL Compatibility (WebGL 2) | https://ruben-tipparach.itch.io/the-museum, by CI on `main` | built, played to its end here |
+| desktop | `desktop/` (not yet) | Godot 4.7.1 mono, C# | Forward+ (ADR-1, ADR-3) | a download | deferred |
+
+Both read `data/` (layout, lore, tuning, material roles), `assets/` (the shell, the
+props, textures, art, audio) and use `tools/` and `scripts/`. ADR-1 and ADR-2 still
+describe the desktop track; nothing in them is withdrawn, it is postponed.
+
+**How one set of files serves two projects.** A Godot project can only read files
+inside its own folder, and the two projects cannot share one folder because a
+project file names one renderer and one language. So `itch/data` and `itch/assets/*`
+are symbolic links to the repository's own folders. Copying was rejected because a
+copy drifts, and a script that refreshes copies is a build step a fresh clone would
+have to know about; making the repository root the project was rejected because Godot
+would then scan the mockups, the docs and the tools. The links are committed, they
+cost nothing, and the import proved them: Godot followed every one, imported 142
+files through them, and packed them into the export. The `.import` sidecars Godot
+writes are committed too (the-federation ignored them; Godot's own guidance is to
+commit them), because they are the import settings, not the import: a fresh checkout
+imports every texture as Basis Universal and every sound as QOA because the sidecar
+and `project.godot`'s importer defaults say so, and the shell gets its collision
+because its sidecar names the post import script. On Windows the links need
+`core.symlinks=true`; `itch/README.md` says so.
+
+**What the itch project is.** The approved prototype, `mockups/elmorian-exhibit/`,
+ported one file to one file, with the same split ADR-2 asks for:
+
+- `itch/src/sim/puzzles.gd` is `puzzles.js`: the four puzzles as plain state, no
+  scene, no renderer. `itch/tests/run_tests.gd` makes the same twenty checks as
+  `test.mjs` plus a save round trip, headless, in under a second.
+- `itch/src/main.gd` is `game.js`: it routes a tap to the thing it landed on and
+  tells the others what happened. `camera_rig.gd` (one rig, room and inspect modes,
+  the `1 - exp(-k dt)` ease, distance in log space), `interaction.gd` (the one raycast,
+  ignoring what the camera stands in and a doorway it is passing through),
+  `light_pool.gd` (a fixed pool that follows the room), `exhibit_view.gd` (draws the
+  state on the props and animates it), `hud.gd`, `save_file.gd`, `audio_bank.gd`,
+  `material_library.gd` (the one place a texture path is spelled) and `data_files.gd`
+  (the one place a data path is spelled). No rule lives in any of them.
+- The props the prototype drew with three.js primitives are now Blender models,
+  `tools/build_props.py` through the same `blenderlib.py` as the shell: fourteen
+  glbs, 8298 triangles, gate checked, smooth shaded across their curves, the
+  `.blend` beside them and a render as proof (`docs/reference/elmorian_props.png`).
+- `itch/scenes/exhibit.tscn` places them, and it is WRITTEN by
+  `tools/gen_itch_scene.py` from a `props` block added to the layout, the way the
+  shell is built from the layout: scenes are structure (CLAUDE.md 9), and this one
+  is a build product of the design rather than something hand placed twice. Each
+  prop carries an authored collision body whose metadata says what a tap on it means.
+- The seeing stones are little reliefs rather than render targets: three scaled eye
+  discs and numeral plates on the first, the four real ring models on tiny pegs on
+  the second, four word plates on the third. Configured by state, never drawn by
+  code, and nothing to allocate on a phone.
+- The shell (`assets/exhibit/elmorian.glb`) is instanced as it is. A post import
+  script gives every solid part a collision body made from its own mesh and names the
+  door slabs and plaques on those bodies; role materials are bound at load from
+  `data/materials.json`, the same table the prototype now reads.
+- Audio, per ADR-12 and CLAUDE.md 7: eighteen effects from `tools/gen_sfx.py`
+  (seeded, `--check`, 1.5 MB of wav), clicks and stone ticks for the puzzles, a two
+  and a half second rocky slide for a door, chimes, a footstep, a room tone bed; and
+  the music, "Hall Six", a Strudel pattern in `assets/audio/music/hall_six.strudel`
+  rendered offline by the tom-lander renderer vendored in `tools/strudel/` (one change:
+  it takes a plain source file) to 164 s of ogg, slow and mostly empty in the manner
+  of Riven, D Phrygian, a drone, pads, a reed that says four notes and waits, a far
+  drum and water dripping.
+
+**The HUD** is authored in `itch/scenes/hud.tscn` at a 390 unit short side, fixed
+panels, the card's text scrolling inside it. `window/stretch` is `canvas_items` with
+`expand` on a 390 by 390 base, so the short side is 390 units whichever way a phone
+is held, and `main.gd` caps the scale at 1.4 on a big screen.
+
+**What was measured here** (software GL under xvfb, SwiftShader in headless
+Chromium; slow, and only ever a proof of what is drawn, CLAUDE.md 10):
+
+| Check | Result |
+|---|---|
+| `itch/tests/run_tests.gd`, headless | 21 checks |
+| `itch/tests/scene_test.gd`, every room and station rendered at 390x844 | 15 checks, frames in `docs/reference/itch_*.png` |
+| Web export | `index.wasm` 39.5 MB, `index.pck` 21.2 MB, export in 13 s |
+| `itch/tests/web_boot.mjs` | first frame 13.1 s after the page opened, 79% of it lit |
+| `itch/tests/playthrough.mjs`, 390x844 | plays to the end through real taps and drags, then reloads and finds the save |
+
+**What was learned.** A press and release in the same instant is not a tap the page
+sees, so the harness holds a finger down for 70 ms, which is also what a finger does.
+The shell's collision landed on the first try because it is derived from the mesh
+rather than authored beside it. And the one bug the port found was the prototype's:
+the view was only applied on a restore, so a fresh start showed the stones and the
+dials unset until the first touch. `main.gd` applies it at start.
+
+**Kept in step (CLAUDE.md 3).** The prototype now reads `data/tuning.json`, the
+camera's places (`views` in the layout), the station caps and `data/materials.json`
+from the same files the game reads, so a number is changed once. Its playthrough
+still passes.
+
+---
+
 ## 13. Tests, and the suites that grow with the code
 
 Every suite that exists must pass before a push (CLAUDE.md 9). Today:
@@ -731,23 +833,35 @@ The playthrough is the one that plays the game, and it already found two defects
 unit tests were blind to (black pads from a clobbered userData, and stations framed for
 the wrong screen). It taps where a player taps and reads `ftDebug` only to observe.
 
-As code lands, in this order:
+The itch track (ADR-14), which `.github/workflows/deploy-itch.yml` runs on every push
+and pull request, deploying on `main`:
+
+```sh
+./scripts/check-config.sh            # build.config against the presets; the generated
+                                     # scene and the sound effects against their sources
+./scripts/run-tests.sh               # the puzzles headless (21), then every room and
+                                     # station rendered under xvfb (15), frames to docs/reference
+./scripts/build.sh                   # the Web export, builds/web
+./scripts/verify-build.sh            # boots it in headless Chromium, needs the smoke marker
+node itch/tests/playthrough.mjs      # plays the export to its end at 390x844, mouse
+node itch/tests/playthrough.mjs --touch      # the same through touch events
+node itch/tests/playthrough.mjs --landscape  # and at 844x390
+./scripts/build-props.sh             # the props build, gate and render
+python3 tools/gen_sfx.py --check     # the sound effects match their generator
+```
+
+The web playthrough is the one that plays the GAME: it taps where a player taps, drags
+to turn, presses the same buttons, and reads `ftDebug` only to observe. It found the
+same class of defect the prototype's did: a tap that lands, a control that is where
+it says it is, a save that comes back.
+
+As the desktop track lands:
 
 ```sh
 dotnet test src/Museum.Core.Tests   # puzzles, interaction, observed rule, saves
-./scripts/run-tests.sh              # headless Godot: scenes instantiate, panels keep
-                                    # their size, every room manifest names one GI
-                                    # method and its lights are in a tier
 python3 tools/verify_assets.py      # every asset has a source, a script, and is
                                     # within budget
-./scripts/build.sh && ./scripts/verify-build.sh   # the export boots headless
 ```
-
-And the one that plays the game: a scripted walkthrough that starts a new game,
-solves the first room through the real input path, and exits non zero if it cannot,
-because no suite above can say the GAME is playable. `redux-tribes` shipped two
-defects every unit suite was blind to and wrote that harness afterwards; this repo
-writes it with the first room.
 
 ---
 
@@ -768,6 +882,8 @@ document, and so a later change of mind has something to change.
 | Audio | **The `tom-lander` pipeline**: Strudel rendered offline for music, seeded Python synthesis for effects, sources committed | ADR-12 |
 | The world | **Invented, in the manner of Riven**: our own civilizations, history, writing, numbers, animals and ecosystem, eerily close to Earth's | ADR-10, `WORLD.md` |
 | The default branch | **`main` exists**, and this work is a pull request into it | the repository |
+| Two tracks | **The itch track first** (2026-09-05): GDScript, Web, deployed to https://ruben-tipparach.itch.io/the-museum; the desktop track deferred | ADR-14 |
+| Audio | **Authored** (2026-09-05): effects and a "chill ambient spooky" score in the manner of Riven, a rocky door, chits and clicks for the puzzles, through the ADR-12 pipeline | ADR-12, ADR-14 |
 | The Elmorian exhibit | **Approved as built** (2026-09-04): the four rooms and their puzzles, the museum shell from Blender (carpet, painted walls, relief feature walls with vines, black truss with track heads, stanchions, exit signs, extinguishers, staff door), a wide spot on every station and a light on every plaque. Prototype: `mockups/elmorian-exhibit/`, published as an artifact | ADR-5, ADR-8, ADR-13, `WORLD.md` 4.6 |
 
 ---

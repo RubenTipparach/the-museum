@@ -1,0 +1,194 @@
+{
+  "_": "Every material role the shell and the props are named for, and what binds to it (CLAUDE.md 4.1: one place spells every asset path). A map named here is assets/textures/<role>_<map>.png; `from` borrows another role's maps and tints them. Colours are sRGB hex. The Blender build names materials for these roles and binds nothing; the engines bind from this table.",
+  "textures": "assets/textures",
+  "art": "assets/art",
+  "roles": {
+    "mat_carpet": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_paint_green": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_paint_plum": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_relief_floral": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_stone_arch": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_stone_paving": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_door_stone": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_door_staff": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ]
+    },
+    "mat_metal_black": {
+      "maps": [
+        "albedo",
+        "normal",
+        "rough"
+      ],
+      "metallic": 0.6
+    },
+    "mat_vine": {
+      "maps": [
+        "albedo"
+      ]
+    },
+    "mat_leaf": {
+      "maps": [
+        "albedo"
+      ],
+      "alphaScissor": 0.5,
+      "doubleSided": true
+    },
+    "mat_sign_exit": {
+      "maps": [
+        "albedo"
+      ],
+      "emission": "#20c050",
+      "emissionEnergy": 0.7,
+      "emissionFromAlbedo": true
+    },
+    "mat_sign_staff": {
+      "maps": [
+        "albedo"
+      ]
+    },
+    "mat_lamp": {
+      "color": "#fff2d0",
+      "emission": "#ffe0a0",
+      "emissionEnergy": 2.5
+    },
+    "mat_void_black": {
+      "color": "#030303"
+    },
+    "mat_plaque": {
+      "color": "#8c8470",
+      "roughness": 0.85
+    },
+    "mat_sign_hall": {
+      "color": "#8c8470",
+      "roughness": 0.8
+    },
+    "mat_belt": {
+      "color": "#6a1418"
+    },
+    "mat_extinguisher": {
+      "color": "#b01008",
+      "roughness": 0.45
+    },
+    "mat_stone_prop": {
+      "from": "mat_stone_arch",
+      "tint": "#c9bf9a"
+    },
+    "mat_stone_plinth": {
+      "from": "mat_stone_arch",
+      "tint": "#9e9483"
+    },
+    "mat_stone_peg": {
+      "from": "mat_stone_arch",
+      "tint": "#7a7266"
+    },
+    "mat_ring_0": {
+      "from": "mat_stone_arch",
+      "tint": "#f0e0aa"
+    },
+    "mat_ring_1": {
+      "from": "mat_stone_arch",
+      "tint": "#d4cc9e"
+    },
+    "mat_ring_2": {
+      "from": "mat_stone_arch",
+      "tint": "#bcb59c"
+    },
+    "mat_ring_3": {
+      "from": "mat_stone_arch",
+      "tint": "#a29e90"
+    },
+    "mat_stone_ancestor": {
+      "from": "mat_stone_arch",
+      "tint": "#97b58c",
+      "roughness": 0.7
+    },
+    "mat_stone_base": {
+      "from": "mat_stone_paving",
+      "tint": "#6a655c"
+    },
+    "mat_eye_white": {
+      "color": "#e6e0b6",
+      "roughness": 0.4
+    },
+    "mat_eye_pupil": {
+      "color": "#0b0f0a",
+      "roughness": 0.3
+    },
+    "mat_eye_glow": {
+      "color": "#e6e0b6",
+      "emission": "#88a060",
+      "emissionEnergy": 0.9
+    },
+    "mat_stone_face": {
+      "color": "#1c2b22",
+      "emission": "#1a2a20",
+      "emissionEnergy": 0.6,
+      "roughness": 0.5
+    },
+    "mat_door_lamp": {
+      "color": "#101210",
+      "emission": "#1a1c18",
+      "emissionEnergy": 0.04,
+      "roughness": 0.4
+    },
+    "mat_decal": {
+      "_": "a face that wears one picture from assets/art, chosen by the scene",
+      "color": "#ffffff",
+      "roughness": 0.8
+    }
+  },
+  "doorLamps": {
+    "_": "Green means this door has opened and leads deeper; red means it goes back the way you came; off means it is still shut.",
+    "green": "#2fe06a",
+    "red": "#e0392f",
+    "off": "#1a1c18",
+    "onEnergy": 0.75,
+    "offEnergy": 0.04
+  }
+}

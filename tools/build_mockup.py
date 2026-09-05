@@ -52,6 +52,9 @@ def build(slug):
     for key, path in parts.items():
         with open(path) as f:
             src = f.read()
+        if key == "LORE":
+            with open(os.path.join(ROOT, "data", "lore", "elmorian.json")) as lf:
+                src = src.replace("{{LORE_JSON}}", json.dumps(json.load(lf)))
         # A closing script tag inside a script would end the block early.
         src = src.replace("</script>", "<\\/script>")
         page = page.replace("{{%s}}" % key, src)
@@ -65,6 +68,10 @@ def build(slug):
     page = page.replace("{{SHELL}}", json.dumps(shell, separators=(",", ":")))
     with open(os.path.join(ROOT, "data", "layout", "elmorian.json")) as f:
         page = page.replace("{{LAYOUT}}", json.dumps(json.load(f)))
+    with open(os.path.join(ROOT, "data", "tuning.json")) as f:
+        page = page.replace("{{TUNING}}", json.dumps(json.load(f)))
+    with open(os.path.join(ROOT, "data", "materials.json")) as f:
+        page = page.replace("{{MATERIALS}}", json.dumps(json.load(f)))
     page = page.replace("{{TEXTURES}}", textures_json(d))
     out = os.path.join(d, "index.html")
     with open(out, "w") as f:

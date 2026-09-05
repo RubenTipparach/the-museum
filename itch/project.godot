@@ -1,0 +1,52 @@
+; The Museum: the itch.io track. GDScript, GL Compatibility, exported to Web.
+; Gameplay lives in itch/src, never here (CLAUDE.md 9). Tuning lives in
+; data/tuning.json, never here (CLAUDE.md 4.4). data/ and assets/ are links to
+; the repository's own folders, so this project reads the same layout, lore,
+; textures and art as the prototype and the Blender build.
+
+config_version=5
+
+[application]
+
+config/name="The Museum"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[display]
+
+; The shorter side of the screen is 390 base units whichever way the phone is
+; held; expand fills the longer side. main.gd caps the resulting scale on big
+; screens so a desktop browser does not get a phone's HUD blown up three times.
+window/size/viewport_width=390
+window/size/viewport_height=390
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[importer_defaults]
+
+; Basis Universal transcodes to whatever the phone or the desktop GPU takes,
+; so one download serves both, and no texture needs the editor to notice it
+; is used in 3D. Sounds are QOA, a quarter the size of PCM; the one ogg is
+; music and loops.
+texture={
+"compress/mode": 4,
+"compress/high_quality": false,
+"mipmaps/generate": true,
+"detect_3d/compress_to": 0
+}
+wav={
+"compress/mode": 2
+}
+oggvorbisstr={
+"loop": true
+}
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
