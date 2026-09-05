@@ -796,7 +796,7 @@ Chromium; slow, and only ever a proof of what is drawn, CLAUDE.md 10):
 | `itch/tests/scene_test.gd`, every room and station rendered at 390x844 | 15 checks, frames in `docs/reference/itch_*.png` |
 | Web export | `index.wasm` 39.5 MB, `index.pck` 21.2 MB, export in 13 s |
 | `itch/tests/web_boot.mjs` | first frame 13.1 s after the page opened, 79% of it lit |
-| `itch/tests/playthrough.mjs`, 390x844 | plays to the end through real taps and drags, then reloads and finds the save |
+| `itch/tests/playthrough.mjs` | plays to the end through real taps and drags, then reloads and finds the save: 73 checks at 390x844 by mouse, 64 at 844x390 (fewer turns to find a door), and the same walk by touch events |
 
 **What was learned.** A press and release in the same instant is not a tap the page
 sees, so the harness holds a finger down for 70 ms, which is also what a finger does.
