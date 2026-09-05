@@ -1,0 +1,17 @@
+{
+  "name": "the-museum",
+  "private": true,
+  "description": "The browser harnesses: the exported web build booted and played to its end, the prototype played to its end, its art rendered to files.",
+  "type": "module",
+  "scripts": {
+    "boot": "node itch/tests/web_boot.mjs builds/web",
+    "playthrough": "node itch/tests/playthrough.mjs builds/web",
+    "playthrough:touch": "node itch/tests/playthrough.mjs --touch builds/web",
+    "playthrough:landscape": "node itch/tests/playthrough.mjs --landscape builds/web",
+    "prototype": "node mockups/elmorian-exhibit/playthrough.mjs",
+    "art": "node tools/render_art.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

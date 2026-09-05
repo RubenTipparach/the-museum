@@ -11,6 +11,16 @@ import { chromium } from 'playwright';
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm',
                '.pck': 'application/octet-stream', '.png': 'image/png', '.json': 'application/json' };
 
+// CHROMIUM names the browser; else the one the Claude Code sandbox
+// pre-installs (its Playwright browsers directory holds a plain chromium and
+// none of the per version shells a bare launch looks for); else Playwright's
+// own, which CI installs with `npx playwright install chromium`.
+function chromiumPath() {
+  if (process.env.CHROMIUM) return process.env.CHROMIUM;
+  const sandbox = '/opt/pw-browsers/chromium';
+  return fs.existsSync(sandbox) ? sandbox : undefined;
+}
+
 export function serve(dir) {
   const server = createServer((req, res) => {
     const file = path.join(dir, decodeURIComponent(req.url.split('?')[0]).replace(/\/$/, '/index.html'));
@@ -24,7 +34,7 @@ export function serve(dir) {
 export async function open(dir, { width = 390, height = 844, touch = false } = {}) {
   const { server, url } = await serve(dir);
   const browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium',
+    executablePath: chromiumPath(),
     args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'],
   });
   const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
