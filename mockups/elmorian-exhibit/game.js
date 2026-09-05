@@ -46,6 +46,11 @@
   // coloured wash on the jamb is what makes the state read from across it.
   var doorLights = [new THREE.PointLight(0x000000, 0, 1.9, 2), new THREE.PointLight(0x000000, 0, 1.9, 2)];
   doorLights.forEach(function (l) { scene.add(l); });
+  // And a track head over the door that leads on, because a small lamp is not
+  // enough to find on a dim phone: the way out of a room should be the
+  // brightest thing in it.
+  var wayLight = new THREE.SpotLight(0xcaffd8, 0, 9, 0.62, 0.55, 1.3);
+  scene.add(wayLight); scene.add(wayLight.target);
   var LAY = window.LAYOUT, TEX = window.TEXTURES;
 
   // ---- textures and materials ------------------------------------------------------
@@ -185,14 +190,27 @@
       d.lamps.forEach(function (m) { m.material = lampMat(kind); });
       if (kind !== 'off' && lit.length < doorLights.length) lit.push([d, kind]);
     });
+    function sideOf(d) {
+      var out = d.axis === 'x' ? V3(0, 0, 1) : V3(1, 0, 0);
+      var toward = ROOMS[rig.room].center.clone().sub(d.pos); toward.y = 0;
+      return out.multiplyScalar(toward.dot(out) >= 0 ? 1 : -1);
+    }
     doorLights.forEach(function (l, k) {
       if (!lit[k]) { l.intensity = 0; return; }
-      var d = lit[k][0], out = d.axis === 'x' ? V3(0, 0, 1) : V3(1, 0, 0);
-      var toward = ROOMS[rig.room].center.clone().sub(d.pos); toward.y = 0;
-      var sgn = toward.dot(out) >= 0 ? 1 : -1;
-      l.position.set(d.pos.x + out.x * sgn * 0.45, T.doorH + 0.05, d.pos.z + out.z * sgn * 0.45);
+      var d = lit[k][0], out = sideOf(d);
+      l.position.set(d.pos.x + out.x * 0.45, T.doorH + 0.05, d.pos.z + out.z * 0.45);
       l.color.setHex(LAMP[lit[k][1]]); l.intensity = 0.85;
     });
+    // the way on, if there is one open from here
+    var way = null;
+    DOORS.forEach(function (d, i) { if (d.rooms[0] === rig.room && X.open[i]) way = d; });
+    if (!way) { wayLight.intensity = 0; }
+    else {
+      var out = sideOf(way);
+      wayLight.position.set(way.pos.x + out.x * 1.15, LAY.fixtures.truss.y - 0.4, way.pos.z + out.z * 1.15);
+      wayLight.target.position.set(way.pos.x + out.x * 0.12, 1.35, way.pos.z + out.z * 0.12);
+      wayLight.intensity = 34;
+    }
   }
 
   function box(w, h, d, mat, x, y, z, ry) {

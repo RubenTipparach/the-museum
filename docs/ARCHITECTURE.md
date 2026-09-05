@@ -273,6 +273,10 @@ and it costs two lights: a room has at most two doors, so the pool carries two a
 them. The lamp discs are on both sides of every opening, because a door is a fact in
 both rooms.
 
+**The way on also gets a track head**, aimed down at the open door from the truss, so
+that the exit from a room is the brightest thing in it. A lamp alone is not enough to
+find on a phone held in a dim room, which is where this game is played.
+
 **Rooms whose lighting changes as a puzzle are the interesting case,** and Q5 asks how
 many there are. A lightmap holds one state. The options, in order of preference:
 
