@@ -6917,7 +6917,18 @@ window.GLTFLoaderModule = { GLTFLoader };
     backBtn.hidden = false; document.body.classList.add('inspecting');
     if (!card.hidden) readBtn.hidden = true; else readBtn.hidden = !lastCard;
   }
-  function leaveInspect() { var R = ROOMS[rig.room]; rig.mode = 'room'; rig.station = null; rig.queue = []; setGoal(R.center, R.yaw, R.pitch, roomDist(R)); lastCard = null; hideCard(); backBtn.hidden = true; readBtn.hidden = true; document.body.classList.remove('inspecting'); }
+  // Back steps away from the object, it does not turn away from the wall. The
+  // yaw is kept exactly as it is, so pulling out of a plaque leaves the whole
+  // wall in front of you and its neighbours either side; only the pitch comes
+  // back to the room's, because an anchor may have been looking up or down at
+  // something and a room view should be level.
+  function leaveInspect() {
+    var R = ROOMS[rig.room];
+    rig.mode = 'room'; rig.station = null; rig.queue = [];
+    setGoal(R.center, rig.goal.yaw, R.pitch, roomDist(R));
+    lastCard = null; hideCard(); backBtn.hidden = true; readBtn.hidden = true;
+    document.body.classList.remove('inspecting');
+  }
   // The distance that fits a w by h extent in the current view, capped so the
   // camera stays inside the room.
   function fitDist(w, h, cap) {

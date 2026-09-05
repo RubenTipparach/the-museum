@@ -353,6 +353,13 @@ do not both fit at 390 px, so the chips go while an object is being inspected: j
 rooms from inside an object is not a thing anyone does, and a control that is covered is
 a control that does not take a tap.
 
+**Back steps away, it does not turn away** (owner, 2026-09-05). Leaving an object pulls
+the camera out to the room's own distance and levels its pitch, and keeps the yaw
+exactly as it was, so a player who was reading one plaque is left facing that wall with
+its neighbours either side rather than whipped round to the room's authored heading.
+Entering a room still faces what that room is about; only leaving an object is the
+player's own heading to keep.
+
 **Inspect anchors are authored on the object,** in Blender, as named empties exported
 in the glTF: the camera position, the pivot, the allowed orbit range and which
 hotspots are visible from it. The Room's trick is that every object has a "right"
