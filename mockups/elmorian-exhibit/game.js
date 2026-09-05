@@ -549,7 +549,13 @@
     chips.appendChild(b); return b;
   }
   var chipEls = [0, 1, 2, 3, 4, 5].map(chip);
-  function canReach(i) { for (var k = 1; k <= i && k <= 4; k++) if (!X.open[k]) return false; return true; }
+  // Fast travel offers every room already reached, the newest one included.
+  // Reaching room i needs the doors BEHIND it open, 0 to i - 1; it does not
+  // need the door out of it, which is that room's own puzzle. Asking for
+  // 1..i meant the room you had just unlocked stayed greyed out until you
+  // had solved it, so the one room a player wants to jump back to was the
+  // one room the row would not offer.
+  function canReach(i) { for (var k = 1; k < i && k <= 4; k++) if (!X.open[k]) return false; return true; }
   function updateHud() {
     document.getElementById('roomSub').textContent = L.rooms[rig.room].sub; document.getElementById('roomName').textContent = L.rooms[rig.room].name;
     chipEls.forEach(function (b, i) { b.classList.toggle('here', i === rig.room); b.classList.toggle('locked', !canReach(i)); });
