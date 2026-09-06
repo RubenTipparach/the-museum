@@ -1,8 +1,8 @@
 {
   "name": "the-museum",
   "private": true,
+  "_": "No \"type\": \"module\" here on purpose. Every harness in this repo is a .mjs and is ESM whatever this says, but declaring the package a module turns the prototype's own puzzles.js into ESM too, and mockups/elmorian-exhibit/test.mjs requires it. That broke the prototype's twenty checks silently, because nothing ran them.",
   "description": "The browser harnesses: the exported web build booted and played to its end, the prototype played to its end, its art rendered to files.",
-  "type": "module",
   "scripts": {
     "boot": "node itch/tests/web_boot.mjs builds/web",
     "playthrough": "node itch/tests/playthrough.mjs builds/web",
@@ -13,8 +13,5 @@
   },
   "devDependencies": {
     "playwright": "1.56.1"
-  },
-  "dependencies": {
-    "jsfxr": "^1.4.1"
   }
 }

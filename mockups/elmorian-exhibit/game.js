@@ -395,8 +395,9 @@
     placeLights(r); refreshDoorLamps(); updateHud(); save();
     if (r === 5) setTimeout(function () { if (rig.room === 5) showCard(L.end.title, L.end.text); }, 1400);
   }
-  function inspect(point, normal, dist, station) {
+  function inspect(point, normal, dist, station, halfHeight) {
     var off = normal.clone().normalize();
+    readAnchor = point.clone(); readAnchor.y -= (halfHeight || 0);
     rig.mode = 'inspect'; rig.station = station || null; rig.queue = [];
     var yaw = Math.atan2(off.x, off.z), pitch = Math.asin(Math.max(-1, Math.min(1, off.y)));
     rig.anchorYaw = nearAngle(yaw, rig.yaw); rig.anchorPitch = pitch;
@@ -429,7 +430,7 @@
     if (k === '_') return; var st = LAY.stations[k];
     STATIONS[k] = { point: V3(st.point[0], st.point[1], st.point[2]), normal: V3(st.normal[0], st.normal[1], st.normal[2]), w: st.w, h: st.h, cap: st.cap, room: st.room };
   });
-  function goStation(name) { var s = STATIONS[name]; inspect(s.point, s.normal, fitDist(s.w, s.h, s.cap), name); }
+  function goStation(name) { var s = STATIONS[name]; inspect(s.point, s.normal, fitDist(s.w, s.h, s.cap), name, s.h / 2); }
   function roomDist(R) { return camera.aspect < 1 ? R.dist + 0.3 : R.dist; }
 
   // ---- input ---------------------------------------------------------------------------------------
@@ -490,8 +491,8 @@
         if (!X.open[u.i]) { showCard(L.doors[u.i].title, L.doors[u.i].text); shake(d.mesh); audio.thud(); return; }
         var to = d.rooms[0] === rig.room ? d.rooms[1] : d.rooms[0]; goRoom(to); audio.step(); break;
       }
-      case 'plaque': showCard(L.plaques[u.id].title, L.plaques[u.id].text); inspect(centreOf(h.object), u.normal, fitDist(1.5, 1.1, 4), 'plaque'); audio.click(); break;
-      case 'stone': showCard('Seeing stone', 'It shows a room behind you as that room stands now.'); goStation('final'); audio.click(); break;
+      case 'plaque': offerCard(L.plaques[u.id].title, L.plaques[u.id].text); inspect(centreOf(h.object), u.normal, fitDist(1.5, 1.1, 4), 'plaque', 0.5); audio.click(); break;
+      case 'stone': offerCard('Seeing stone', 'It shows a room behind you as that room stands now.'); goStation('final'); audio.click(); break;
       case 'eye':
         if (rig.station !== 'gaze') { goStation('gaze'); audio.click(); break; }
         P.gazeTap(X.gaze, u.i); eyeDiscs[u.i].userData.angle += PI / 3; audio.tick(u.i); afterChange(); break;
@@ -540,7 +541,21 @@
   // Closing the label is not leaving the object: the camera stays where it is
   // so the thing can be looked at, and Read brings the label back. Back is
   // the only way out, and it is next to it.
-  var lastCard = null;
+  var lastCard = null, readAnchor = V3(0, 0, 0);
+  // A tap on an exhibit item OFFERS its label: the button appears under the
+  // object and the writing stays away until it is asked for, so the thing you
+  // chose to look at is not immediately covered by a description of it.
+  function offerCard(title, text) { lastCard = { title: title, text: text }; hideCard(); }
+  // Read follows the object while the camera eases in, so it never detaches
+  // from the thing it belongs to.
+  function placeRead() {
+    if (readBtn.hidden) return;
+    var v = readAnchor.clone().project(camera);
+    var x = (v.x + 1) / 2 * window.innerWidth, y = (1 - v.y) / 2 * window.innerHeight + 16;
+    var w = readBtn.offsetWidth, h = readBtn.offsetHeight;
+    readBtn.style.left = Math.max(w / 2 + 10, Math.min(window.innerWidth - w / 2 - 10, x)) + 'px';
+    readBtn.style.top = Math.max(10, Math.min(window.innerHeight - h - 74, y)) + 'px';
+  }
   function showCard(title, text) {
     lastCard = { title: title, text: text };
     cardTitle.textContent = title; cardText.innerHTML = text.split('\n\n').map(function (p) { return '<p>' + p + '</p>'; }).join('');
@@ -637,6 +652,7 @@
     pads.forEach(function (p) { p.userData.glow = ease(p.userData.glow, p.userData.on ? 0.55 : 0, k); p.material.emissive.setRGB(0.9 * p.userData.glow, 0.7 * p.userData.glow, 0.25 * p.userData.glow); });
     // shakes
     for (var i = shakes.length - 1; i >= 0; i--) { var s = shakes[i]; s.t += dt; s.m.position.x = s.x + Math.sin(s.t * 60) * 0.03 * Math.max(0, 0.3 - s.t); if (s.t > 0.3) { s.m.position.x = s.x; shakes.splice(i, 1); } }
+    placeRead();
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
