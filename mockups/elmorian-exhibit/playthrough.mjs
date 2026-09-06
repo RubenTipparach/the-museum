@@ -109,6 +109,11 @@ await back(); await walk(3); s = await state(); ok(s.room === 4, 'door 3 leads t
 // Room 4: read the stones, find the ancestor door shut.
 await findOnScreen('stone', 1); await tapThing('stone', 1);
 s = await state(); ok(s.station === 'final', 'the seeing stones are a station');
+ok(!(await page.isVisible('#card')) && await page.isVisible('#read'),
+   'a tap on an exhibit item offers its label rather than opening it');
+await page.click('#read'); await settle();
+ok(await page.isVisible('#card'), 'and Read description opens it');
+await page.click('#cardClose'); await settle();
 await back(); await findOnScreen('door', 4); await tapThing('door', 4);
 s = await state(); ok(s.room === 4 && !s.open[4], 'the ancestor door is shut');
 ok(await page.isVisible('#card'), 'and says so');

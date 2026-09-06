@@ -18,10 +18,10 @@ signal chip_pressed(room: int)
 @onready var about: Button = $Root/About
 @onready var card: PanelContainer = $Root/Card
 @onready var card_title: Label = $Root/Card/VBox/Head/Title
-@onready var card_close: Button = $Root/Card/VBox/Head/Close
+@onready var card_close: Button = $Root/Card/VBox/Close
 @onready var card_scroll: ScrollContainer = $Root/Card/VBox/Scroll
 @onready var card_text: RichTextLabel = $Root/Card/VBox/Scroll/Text
-@onready var read: Button = $Root/Tools/Read
+@onready var read: Button = $Root/Read
 @onready var back: Button = $Root/Tools/Back
 @onready var chips: HBoxContainer = $Root/Chips
 @onready var hint: Label = $Root/Hint
@@ -79,8 +79,22 @@ func set_tools(read_visible: bool, back_visible: bool) -> void:
 	back.visible = back_visible
 
 
-## Read and Back share the bottom band with the room chips, and at 390 px
-## they do not both fit; while an object is being looked at the chips go.
+## Put Read under the thing it describes. `at` is where the bottom of that
+## object lands on screen; the button is centred on it and pushed clear, and
+## kept inside the viewport so an object near an edge does not take its own
+## control off screen with it.
+func place_read(at: Vector2) -> void:
+	if not read.visible:
+		return
+	var size := read.size
+	var view := get_viewport().get_visible_rect().size
+	var pos := Vector2(at.x - size.x * 0.5, at.y + 14.0)
+	read.position = Vector2(clampf(pos.x, 10.0, maxf(10.0, view.x - size.x - 10.0)),
+							clampf(pos.y, 10.0, maxf(10.0, view.y - size.y - 74.0)))
+
+
+## Back shares the bottom band with the room chips, and at 390 px they do not
+## both fit; while an object is being looked at the chips go.
 func set_inspecting(on: bool) -> void:
 	chips.visible = not on
 

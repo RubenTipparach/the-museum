@@ -57,6 +57,12 @@ jobs:
           for f in scripts/*.sh scripts/lib/*.sh; do bash -n "$f"; done
           ./scripts/check-config.sh
 
+      # The prototype is the design reference and its rules must not drift from
+      # the game's. Nothing ran these until a "type": "module" in the root
+      # package.json turned puzzles.js into ESM and broke them unnoticed.
+      - name: The prototype's own checks
+        run: node mockups/elmorian-exhibit/test.mjs
+
       - name: Cache Godot and the web export templates
         uses: actions/cache@v4
         with:

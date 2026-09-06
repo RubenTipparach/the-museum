@@ -59,6 +59,34 @@ func _run() -> void:
 		main.go_station(st)
 		await _settle()
 		await _shot("station_" + st)
+	# Two screens a room render never shows: an exhibit item offering its
+	# label, and the label open over it. Both are proven with a frame
+	# (CLAUDE.md 10), because both are text over a lit wall.
+	main.go_room(1, true)
+	await _settle()
+	for b in main.bodies:
+		if String(b.get_meta("kind")) == "plaque" and String(b.get_meta("id")) == "gaze":
+			main.tap(main.rig.camera.unproject_position(Interaction.centre_of(b)))
+			break
+	await _settle()
+	ok(main.hud.read.visible and not main.hud.card_visible(),
+	   "a tap on an exhibit item offers its label rather than opening it")
+	var item: Vector2 = main.rig.camera.unproject_position(main.read_anchor)
+	var read_rect: Rect2 = main.hud.read.get_global_rect()
+	ok(read_rect.position.y > item.y, "Read description stands below the item, not over it")
+	ok(absf(read_rect.get_center().x - item.x) < 30.0, "and is centred under it")
+	await _shot("card_offered")
+
+	main.hud.read_pressed.emit()
+	await process_frame
+	await process_frame
+	ok(main.hud.card_visible(), "and pressing it opens the label")
+	await _shot("card_open")
+	var card_rect: Rect2 = main.hud.card.get_global_rect()
+	var close_rect: Rect2 = main.hud.card_close.get_global_rect()
+	ok(close_rect.get_center().y > card_rect.position.y + card_rect.size.y * 0.7,
+	   "close sits at the foot of the label, not over its first line")
+	ok(absf(close_rect.get_center().x - card_rect.get_center().x) < 24.0, "and centred across it")
 	print("ALL %d SCENE CHECKS PASSED" % _n)
 	quit(0)
 

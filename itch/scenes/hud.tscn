@@ -6,14 +6,12 @@
 content_margin_left = 14.0
 content_margin_top = 10.0
 content_margin_right = 14.0
-content_margin_bottom = 12.0
-bg_color = Color(0.847, 0.827, 0.773, 0.96)
+content_margin_bottom = 10.0
+bg_color = Color(0.043, 0.059, 0.051, 0.74)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
-shadow_color = Color(0, 0, 0, 0.5)
-shadow_size = 12
 
 [sub_resource type="StyleBoxFlat" id="btn"]
 content_margin_left = 16.0
@@ -69,6 +67,38 @@ content_margin_top = 6.0
 content_margin_right = 6.0
 content_margin_bottom = 6.0
 bg_color = Color(0.106, 0.129, 0.118, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.851, 0.655, 0.353, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="boxed"]
+content_margin_left = 18.0
+content_margin_top = 7.0
+content_margin_right = 18.0
+content_margin_bottom = 7.0
+bg_color = Color(0.043, 0.059, 0.051, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.251, 0.224, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="boxed_spot"]
+content_margin_left = 18.0
+content_margin_top = 9.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+bg_color = Color(0.043, 0.059, 0.051, 0.86)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
@@ -184,21 +214,15 @@ theme_override_constants/separation = 12
 [node name="Title" type="Label" parent="Root/Card/VBox/Head"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.051, 0.067, 0.059, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.847, 0.827, 0.773, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/shadow_outline_size = 4
+theme_override_font_sizes/font_size = 18
 text = "Title"
 clip_text = true
 text_overrun_behavior = 3
-
-[node name="Close" type="Button" parent="Root/Card/VBox/Head"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.353, 0.314, 0.251, 1)
-theme_override_font_sizes/font_size = 11
-theme_override_styles/normal = SubResource("none")
-theme_override_styles/hover = SubResource("none")
-theme_override_styles/pressed = SubResource("none")
-theme_override_styles/focus = SubResource("none")
-text = "CLOSE"
 
 [node name="Scroll" type="ScrollContainer" parent="Root/Card/VBox"]
 layout_mode = 2
@@ -208,10 +232,25 @@ horizontal_scroll_mode = 3
 [node name="Text" type="RichTextLabel" parent="Root/Card/VBox/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/default_color = Color(0.051, 0.067, 0.059, 1)
+theme_override_colors/default_color = Color(0.847, 0.827, 0.773, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/shadow_outline_size = 4
 theme_override_font_sizes/normal_font_size = 15
 fit_content = true
 scroll_active = false
+
+[node name="Close" type="Button" parent="Root/Card/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.573, 0.612, 0.584, 1)
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = SubResource("boxed")
+theme_override_styles/hover = SubResource("boxed")
+theme_override_styles/pressed = SubResource("boxed")
+theme_override_styles/focus = SubResource("none")
+text = "CLOSE"
 
 [node name="Tools" type="HBoxContainer" parent="Root"]
 layout_mode = 1
@@ -226,16 +265,6 @@ grow_vertical = 0
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="Read" type="Button" parent="Root/Tools"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.573, 0.612, 0.584, 1)
-theme_override_font_sizes/font_size = 12
-theme_override_styles/normal = SubResource("btn_soft")
-theme_override_styles/hover = SubResource("btn_soft")
-theme_override_styles/pressed = SubResource("btn_soft")
-theme_override_styles/focus = SubResource("none")
-text = "READ"
-
 [node name="Back" type="Button" parent="Root/Tools"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.847, 0.827, 0.773, 1)
@@ -245,6 +274,19 @@ theme_override_styles/hover = SubResource("btn")
 theme_override_styles/pressed = SubResource("btn")
 theme_override_styles/focus = SubResource("none")
 text = "BACK"
+
+[node name="Read" type="Button" parent="Root"]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 190.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.851, 0.655, 0.353, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("boxed_spot")
+theme_override_styles/hover = SubResource("boxed_spot")
+theme_override_styles/pressed = SubResource("boxed_spot")
+theme_override_styles/focus = SubResource("none")
+text = "READ DESCRIPTION"
 
 [node name="Chips" type="HBoxContainer" parent="Root"]
 layout_mode = 1
