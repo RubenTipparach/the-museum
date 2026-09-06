@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Render every sound from its MIDI source and check what comes out
-# (docs/AUDIO.md). The effects and the score are regenerated, never patched.
+# Render every sound from its source and check what comes out (docs/AUDIO.md).
+# The effects are Csound scores against assets/audio/sfx/museum.orc; the score
+# is a MIDI file played by fluidsynth. Both are regenerated, never patched.
 #
 # Usage: ./scripts/render-audio.sh          # render, then gate
 #        ./scripts/render-audio.sh --check  # gate only, and fail on drift

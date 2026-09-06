@@ -56,10 +56,11 @@ fullscreen button and mobile friendly on.
 - `scenes/exhibit.tscn` comes from `data/layout/elmorian.json` through
   `tools/gen_itch_scene.py`. Move a prop in the layout and rerun it.
 - `assets/props/*.glb` come from `tools/build_props.py` (Blender, headless).
-- `assets/audio/sfx/*.wav` and `assets/audio/music/*.ogg` are rendered from the
-  `.mid` beside each by `./scripts/render-audio.sh`, which plays them through
-  fluidsynth and the General MIDI soundfont and then gates the result
-  (docs/AUDIO.md). Edit the `.mid` in LMMS or MuseScore, or the generator.
+- `assets/audio/sfx/*.wav` come from the `.csd` beside each, scored against
+  `museum.orc` and rendered by csound; `assets/audio/music/*.ogg` comes from its
+  `.mid` through fluidsynth. `./scripts/render-audio.sh` does both and gates the
+  result (docs/AUDIO.md). Edit a `.csd` in any text editor, the `.mid` in LMMS or
+  MuseScore, or the generator that writes them.
 - `assets/art/*.png` come from the prototype's `art.js` through `tools/render_art.mjs`.
 
 `scripts/check-config.sh` fails when the scene or the sound effects have

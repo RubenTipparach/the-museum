@@ -1,14 +1,21 @@
-"""Render a MIDI file to a wav with fluidsynth, and master it.
+"""Render a sound from its source, and master it.
 
-The one place a sound is rendered (CLAUDE.md 4.1). tools/gen_sfx.py and
-tools/gen_music.py both write .mid files and both come through here, so the
-soundfont, the reverb and the level policy are set once.
+The one place a sound is rendered and the one place it is mastered
+(CLAUDE.md 4.1). Two renderers, because there are two kinds of sound and a
+soundfont is right for exactly one of them (docs/AUDIO.md):
 
-Why a soundfont and not synthesis in Python: CLAUDE.md 5 wants a real tool
-driven headless, the way Blender makes the models. An earlier cut of the
-effects hand rolled every waveform out of filtered noise and shipped as
-static. A .mid opens in LMMS, Ardour or MuseScore, so the source is editable
-by a person, which is the other half of that rule.
+  render_midi   a .mid through fluidsynth and the General MIDI soundfont.
+                For a SCORE, where the point is instruments playing notes.
+  render_csound a .csd through csound. For an EFFECT, where the point is an
+                object making a noise: modal resonator banks for a struck
+                body, friction inside a band for stone across stone. A wood
+                block instrument sounds like a wood block being PLAYED, which
+                is not what a fingertip on a label sounds like.
+
+Both write 32 bit float and are mastered by sox, which does the trimming,
+the DC block, the fades and the normalisation. Csound's modal banks have
+enormous gain at high Q, so a float intermediate is what keeps the render
+from clipping before the level is set.
 """
 import math
 import os
@@ -19,17 +26,19 @@ import wave
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 SOUNDFONT = "/usr/share/sounds/sf2/FluidR3_GM.sf2"
+ORCHESTRA = "museum.orc"     # beside the .csd files it is included by
 SR = 44100
 
 
 def have_tools():
-    missing = [t for t in ("fluidsynth",) if subprocess.run(["which", t], capture_output=True).returncode]
+    missing = [t for t in ("fluidsynth", "csound", "sox", "oggenc")
+               if subprocess.run(["which", t], capture_output=True).returncode]
     if not os.path.exists(SOUNDFONT):
         missing.append(SOUNDFONT)
     return missing
 
 
-def render(mid, room=0.7, level=0.55, gain=0.6, chorus=False):
+def render_midi(mid, room=0.7, level=0.55, gain=0.6, chorus=False):
     """MIDI to samples, through fluidsynth's own reverb. `room` is the size of
     the space the sound is heard in: a museum hall is large."""
     out = tempfile.mktemp(suffix=".wav")
@@ -44,10 +53,21 @@ def render(mid, room=0.7, level=0.55, gain=0.6, chorus=False):
     r = subprocess.run(cmd, capture_output=True)
     if r.returncode or not os.path.exists(out):
         raise RuntimeError("fluidsynth failed on %s: %s" % (mid, r.stderr.decode()[:400]))
-    try:
-        return read(out)
-    finally:
-        os.remove(out)
+    return out
+
+
+def render_csound(csd):
+    """A .csd to a float wav. Run from the file's own directory so its
+    #include of the orchestra resolves the way it does for a person who
+    opens the folder and types `csound door_open.csd`."""
+    out = tempfile.mktemp(suffix=".wav")
+    r = subprocess.run(["csound", "-o", out, "-W", "-f", "-d", "-m0", os.path.basename(csd)],
+                       cwd=os.path.dirname(os.path.abspath(csd)), capture_output=True, text=True)
+    errors = [l for l in r.stderr.splitlines()
+              if ("error" in l.lower() or "cannot" in l.lower()) and not l.startswith("0 errors")]
+    if errors or not os.path.exists(out):
+        raise RuntimeError("csound failed on %s:\n%s" % (csd, "\n".join(errors[:6]) or r.stderr[-400:]))
+    return out
 
 
 def read(path):
@@ -62,45 +82,50 @@ def read(path):
     return list(a)
 
 
-# ---- mastering: what a person would do after the render ------------------------------
-def dc_block(a, corner=20.0):
-    """Take the DC offset out. Several FluidR3 samples carry one, and the
-    score came off the renderer sitting at +0.028: that is headroom spent on
-    a constant, a thump when a sound starts or stops, and, measured as a
-    spectrum, nearly half the energy in a band nothing can reproduce. One
-    pole high pass at 20 Hz, which is under everything the museum plays."""
-    r = math.exp(-2 * math.pi * corner / SR)
-    out = [0.0] * len(a)
-    x1 = y1 = 0.0
-    for i, x in enumerate(a):
-        y1 = x - x1 + r * y1
-        x1 = x
-        out[i] = y1
-    return out
+# ---- mastering: sox, which is what a person would reach for ------------------
+# One chain, so a plaque tick and a door are levelled the same way:
+#   highpass 20   the DC block. Several FluidR3 samples carry an offset and the
+#                 score came off the renderer at +0.028: headroom spent on a
+#                 constant, a thump at every start, and, measured as a
+#                 spectrum, nearly half the energy where nothing reproduces it.
+#   silence       trim the lead in and, reversed, the tail, so a file is the
+#                 sound and not the renderer's padding.
+#   fade          a 5 ms rise and an authored tail, so nothing clicks.
+#   gain -n       normalise to the level this sound is meant to sit at.
+def master(src, peak_db=-1.5, tail=0.12, trim=True):
+    """Master a rendered wav to a mono 16 bit wav, and return its samples."""
+    out = tempfile.mktemp(suffix=".wav")
+    # Normalise FIRST, then trim. csound writes float at whatever level the
+    # instrument happens to make, and a trim threshold is a share of full
+    # scale: judging a signal peaking at 0.01 against 0.05% of full scale
+    # trimmed the quietest effects away to nothing.
+    # -D: no dither. sox adds dither automatically when it narrows float to
+    # 16 bits, and dither is random, so two renders of an unchanged source
+    # came out different files and --check reported drift on all eighteen.
+    # At 16 bits the quantisation it would hide sits at -96 dBFS, which is
+    # under the room tone, and a reproducible build is worth more than that.
+    chain = ["sox", "-D", src, "-b", "16", "-c", "1", "-r", str(SR), out, "highpass", "20", "gain", "-n", "-0.5"]
+    if trim:
+        chain += ["silence", "1", "0.005", "0.03%",
+                  "reverse", "silence", "1", "0.02", "0.008%", "reverse"]
+    # The fade out is a fade IN on the reversed signal. sox cannot fade out
+    # from the end of a stream whose length it no longer knows, which is what
+    # the trim above leaves it with, and the reverse trick needs no length.
+    chain += ["fade", "t", "0.005"]
+    if tail > 0:
+        chain += ["reverse", "fade", "t", str(tail), "reverse"]
+    chain += ["gain", "-n", str(peak_db)]
+    r = subprocess.run(chain, capture_output=True, text=True)
+    if r.returncode or not os.path.exists(out):
+        raise RuntimeError("sox failed: %s" % r.stderr[-400:])
+    try:
+        return read(out)
+    finally:
+        os.remove(out)
 
 
-
-def trim(a, floor=0.0015, keep_tail=0.12):
-    """Drop the silence fluidsynth leaves at each end, keeping a little of the
-    tail so a reverb is not cut off."""
-    lo = 0
-    while lo < len(a) and abs(a[lo]) < floor:
-        lo += 1
-    hi = len(a)
-    while hi > lo and abs(a[hi - 1]) < floor:
-        hi -= 1
-    return a[lo:min(len(a), hi + int(keep_tail * SR))]
-
-
-def fade(a, seconds=0.05, tail=None):
-    n = max(1, int(seconds * SR))
-    m = max(1, int((tail if tail is not None else seconds) * SR))
-    out = list(a)
-    for i in range(min(n, len(out))):
-        out[i] *= i / n
-    for i in range(min(m, len(out))):
-        out[-1 - i] *= i / m
-    return out
+def read_and_clean(path):
+    return read(path)
 
 
 def peak_to(a, peak):
@@ -109,7 +134,9 @@ def peak_to(a, peak):
 
 
 def loop_seam(a, seconds=1.0):
-    """Cross fade the tail into the head so a bed repeats without a click."""
+    """Cross fade the tail into the head so a bed repeats without a click.
+    The one piece of mastering sox makes awkward, because it is a file
+    against itself."""
     n = int(seconds * SR)
     if n * 2 >= len(a):
         return a

@@ -122,9 +122,13 @@ def build():
     os.makedirs(OUT, exist_ok=True)
     mid = os.path.join(OUT, "hall_six.mid")
     midi.write(mid, compose(world), bpm=BPM)
-    a = A.render(mid, room=0.95, level=0.72, gain=0.7)
-    a = A.dc_block(A.trim(a, keep_tail=1.5))
-    a = A.peak_to(A.fade(a, 1.5, 2.5), 0.82)
+    raw = A.render_midi(mid, room=0.95, level=0.72, gain=0.7)
+    try:
+        # The score keeps its own long fades rather than the effects' short
+        # ones: it opens out of silence and it loops.
+        a = A.master(raw, peak_db=-1.7, tail=2.5, trim=True)
+    finally:
+        os.remove(raw)
     return mid, a
 
 

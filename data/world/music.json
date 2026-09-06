@@ -1,53 +1,130 @@
 {
   "_": "The music of the Elmorians, as data (CLAUDE.md 6: the world is data, and every reader asks it). tools/gen_sfx.py voices the six word pads from it, assets/audio/music/*.strudel composes from the motifs, and tools/check_audio.py refuses a note that is not in the scale. docs/AUDIO.md is the reasoning.",
-
   "scale": {
     "_": "Six notes, because they count in sixes (docs/WORLD.md 2). It is D natural minor with the second degree missing, so there is exactly ONE semitone in the whole scale, between the fifth and the sixth. That one semitone is the entire unease of this music: everything else is open. No leading tone, so nothing ever resolves by being pulled home.",
     "root": "d",
-    "degrees": ["d", "f", "g", "a", "bb", "c"],
-    "semitones": [0, 3, 5, 7, 8, 10],
-    "theSemitone": ["a", "bb"]
+    "degrees": [
+      "d",
+      "f",
+      "g",
+      "a",
+      "bb",
+      "c"
+    ],
+    "semitones": [
+      0,
+      3,
+      5,
+      7,
+      8,
+      10
+    ],
+    "theSemitone": [
+      "a",
+      "bb"
+    ]
   },
-
   "words": {
     "_": "The six word glyphs of the lexicon, in the order the game numbers them (data/lore, puzzles.gd WORDS), each given one degree of the scale. So the speech puzzle is played rather than pressed: a phrase in room 3 is a phrase of music, and the score quotes the same notes. The pads in assets/audio/sfx/pad_<i>.wav ARE these pitches.",
-    "0": { "word": "light", "note": "a4", "why": "the open fifth, the brightest thing they have" },
-    "1": { "word": "stone", "note": "d3", "why": "the root, an octave down: the ground everything stands on" },
-    "2": { "word": "eye", "note": "c5", "why": "the seventh, high and unresolved, because an eye is a question" },
-    "3": { "word": "touch", "note": "g4", "why": "the fourth, the plainest interval, and touch is how they speak at all" },
-    "4": { "word": "door", "note": "f4", "why": "the third, the only note that says minor out loud" },
-    "5": { "word": "dark", "note": "bb4", "why": "the one semitone in the scale. It is the word that was only ever written" }
+    "0": {
+      "word": "light",
+      "note": "a4",
+      "why": "the open fifth, the brightest thing they have"
+    },
+    "1": {
+      "word": "stone",
+      "note": "d4",
+      "why": "the root, and the lowest of the six. It sat an octave lower until the farewell was measured: a phrase that opens on a note a phone cannot reproduce opens on silence, and stone is the word the farewell begins with"
+    },
+    "2": {
+      "word": "eye",
+      "note": "c5",
+      "why": "the seventh, high and unresolved, because an eye is a question"
+    },
+    "3": {
+      "word": "touch",
+      "note": "g4",
+      "why": "the fourth, the plainest interval, and touch is how they speak at all"
+    },
+    "4": {
+      "word": "door",
+      "note": "f4",
+      "why": "the third, the only note that says minor out loud"
+    },
+    "5": {
+      "word": "dark",
+      "note": "bb4",
+      "why": "the one semitone in the scale. It is the word that was only ever written"
+    }
   },
-
   "motifs": {
     "_": "Named cells the score is built from. Notes, not rhythms: an arrangement gives them time. Every one is inside the scale, which tools/check_audio.py enforces.",
     "hall_six": {
-      "notes": ["a4", "c5", "a4", "g4", "f4", "d4"],
+      "notes": [
+        "a4",
+        "c5",
+        "a4",
+        "g4",
+        "f4",
+        "d4"
+      ],
       "_": "The house theme, and six notes because a house is measured in sixes. A falling arc that touches the seventh and walks home, arriving on the root without a leading tone, so it lands without ever being pulled."
     },
     "the_gaze": {
-      "notes": ["a4", "g4", "d4"],
+      "notes": [
+        "a4",
+        "g4",
+        "d4"
+      ],
       "_": "Three notes for three eyes. It is stated by three voices at three registers, near, far and behind, entering one after another, which is what the room's three discs are."
     },
     "going_to_stone": {
-      "notes": ["c5", "bb4", "a4", "g4", "f4", "bb4"],
+      "notes": [
+        "c5",
+        "bb4",
+        "a4",
+        "g4",
+        "f4",
+        "bb4"
+      ],
       "_": "The descent of an Elmorian who is darkening, and it refuses to arrive: the sixth degree returns at the end and is held instead of falling to the root. The ancestor chamber's music, and the only place the semitone is heard twice."
     },
     "the_greeting": {
-      "notes": ["a4", "c5", "g4", "f4"],
+      "notes": [
+        "a4",
+        "c5",
+        "g4",
+        "f4"
+      ],
       "_": "light, eye, touch, door. The phrase that opens the door of the speech, and the notes of pads 0, 2, 3, 4 in that order. Said at any threshold."
     },
     "the_farewell": {
-      "notes": ["d4", "bb4", "g4", "c5"],
+      "notes": [
+        "d4",
+        "bb4",
+        "g4",
+        "c5"
+      ],
       "_": "stone, dark, touch, eye. Pads 1, 5, 3, 2. It is not the greeting reversed, and it does not end where it began: it leaves on the seventh, which is why it is what the ancestors open their door to."
     }
   },
-
   "voice": {
     "_": "How the museum sounds, so a generator and an arrangement do not each invent it. Registers are where a thing may sit before it is either inaudible on a phone or shrill.",
-    "melodyHz": [250, 950],
-    "padHz": [140, 500],
-    "bassHz": [65, 130],
-    "airHz": [900, 4000]
+    "melodyHz": [
+      250,
+      950
+    ],
+    "padHz": [
+      140,
+      500
+    ],
+    "bassHz": [
+      65,
+      130
+    ],
+    "airHz": [
+      900,
+      4000
+    ]
   }
 }
