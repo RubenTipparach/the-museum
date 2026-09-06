@@ -111,6 +111,11 @@ await findOnScreen('stone', 1); await tapThing('stone', 1);
 s = await state(); ok(s.station === 'final', 'the seeing stones are a station');
 ok(!(await page.isVisible('#card')) && await page.isVisible('#read'),
    'a tap on an exhibit item offers its label rather than opening it');
+const readBox = await page.locator('#read').boundingBox();
+const backBox = await page.locator('#back').boundingBox();
+ok(readBox.y + readBox.height > H - 60, 'Read sits along the bottom edge, not over the item');
+ok(Math.abs(readBox.x + readBox.width / 2 - W / 2) < 12, 'and centred across the screen');
+ok(readBox.x > backBox.x + backBox.width, 'clear of Back beside it');
 await page.click('#read'); await settle();
 ok(await page.isVisible('#card'), 'and Read description opens it');
 await page.click('#cardClose'); await settle();

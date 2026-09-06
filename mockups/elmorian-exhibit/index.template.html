@@ -35,9 +35,13 @@
   #cardText { overflow-y: auto; padding: 8px 14px 2px; font-size: 14.5px; line-height: 1.5; }
   #cardText p { margin: 0 0 10px; }
   #tools { position: absolute; left: max(12px, env(safe-area-inset-left)); bottom: calc(max(10px, env(safe-area-inset-bottom)) + 10px); display: flex; gap: 8px; }
-  /* Read stands under the exhibit item rather than in a corner: its position
-     is the object's own projection, set every frame while the camera eases. */
-  #read { position: absolute; transform: translateX(-50%); background: rgba(11,15,13,.86); border: 1px solid var(--spot); color: var(--spot);
+  /* Read sits along the bottom edge, in the band Back and the chips use. It
+     followed the object's own projection first, which put it over the middle
+     of the exhibit item: a control for reading about a thing covered the
+     thing. The bottom edge is the one place on screen nothing is exhibited. */
+  #read { position: absolute; left: 50%; transform: translateX(-50%);
+          bottom: calc(max(10px, env(safe-area-inset-bottom)) + 10px);
+          background: rgba(11,15,13,.86); border: 1px solid var(--spot); color: var(--spot);
           border-radius: 3px; padding: 9px 18px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
   #read[hidden] { display: none; }
   #tools button { background: rgba(27,33,30,.85); border: 1px solid var(--spot); color: var(--paper); border-radius: 3px; padding: 10px 16px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }

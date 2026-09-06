@@ -79,22 +79,8 @@ func set_tools(read_visible: bool, back_visible: bool) -> void:
 	back.visible = back_visible
 
 
-## Put Read under the thing it describes. `at` is where the bottom of that
-## object lands on screen; the button is centred on it and pushed clear, and
-## kept inside the viewport so an object near an edge does not take its own
-## control off screen with it.
-func place_read(at: Vector2) -> void:
-	if not read.visible:
-		return
-	var size := read.size
-	var view := get_viewport().get_visible_rect().size
-	var pos := Vector2(at.x - size.x * 0.5, at.y + 14.0)
-	read.position = Vector2(clampf(pos.x, 10.0, maxf(10.0, view.x - size.x - 10.0)),
-							clampf(pos.y, 10.0, maxf(10.0, view.y - size.y - 74.0)))
-
-
-## Back shares the bottom band with the room chips, and at 390 px they do not
-## both fit; while an object is being looked at the chips go.
+## Back and Read share the bottom band with the room chips, and at 390 px they
+## do not all fit; while an object is being looked at the chips go.
 func set_inspecting(on: bool) -> void:
 	chips.visible = not on
 

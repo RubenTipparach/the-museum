@@ -21,7 +21,6 @@ var last_card: Dictionary = {}
 var reset_armed := false
 var bodies: Array[Node3D] = []
 var bridge: DebugBridge
-var read_anchor := Vector3.ZERO
 
 var pointers: Dictionary = {}
 var drag: Dictionary = {}
@@ -101,9 +100,8 @@ func go_room(r: int, instant: bool) -> void:
 				show_card(lore["end"]["title"], lore["end"]["text"]))
 
 
-func inspect(point: Vector3, normal: Vector3, d: float, station: String, half_height: float = 0.0) -> void:
+func inspect(point: Vector3, normal: Vector3, d: float, station: String) -> void:
 	rig.inspect(point, normal, d, station)
-	read_anchor = point - Vector3(0.0, half_height, 0.0)
 	hud.set_tools(false if hud.card_visible() else not last_card.is_empty(), true)
 	hud.set_inspecting(true)
 
@@ -118,7 +116,7 @@ func leave_inspect() -> void:
 
 func go_station(name: String) -> void:
 	var s: Dictionary = L.stations[name]
-	inspect(s["point"], s["normal"], rig.fit_dist(s["w"], s["h"], s["cap"]), name, s["h"] * 0.5)
+	inspect(s["point"], s["normal"], rig.fit_dist(s["w"], s["h"], s["cap"]), name)
 
 
 # ---- the card -----------------------------------------------------------------------------
@@ -143,11 +141,6 @@ func hide_card() -> void:
 
 
 # ---- input -------------------------------------------------------------------------------------
-func _process(_delta: float) -> void:
-	if hud.read.visible:
-		hud.place_read(rig.camera.unproject_position(read_anchor))
-
-
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		_touch(event as InputEventScreenTouch)
@@ -238,7 +231,7 @@ func tap(pos: Vector2) -> void:
 		"plaque":
 			var id: String = h["id"]
 			offer_card(lore["plaques"][id]["title"], lore["plaques"][id]["text"])
-			inspect(h["centre"], L.plaque_normal(id), rig.fit_dist(1.5, 1.1, 4.0), "plaque", 0.5)
+			inspect(h["centre"], L.plaque_normal(id), rig.fit_dist(1.5, 1.1, 4.0), "plaque")
 			audio.play("ui_click")
 		"stone":
 			offer_card("Seeing stone", "It shows a room behind you as that room stands now.")

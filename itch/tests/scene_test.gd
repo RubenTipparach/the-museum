@@ -71,10 +71,14 @@ func _run() -> void:
 	await _settle()
 	ok(main.hud.read.visible and not main.hud.card_visible(),
 	   "a tap on an exhibit item offers its label rather than opening it")
-	var item: Vector2 = main.rig.camera.unproject_position(main.read_anchor)
+	# Read follows the object no longer. It sat on the item's own projection,
+	# which is the middle of the screen, so a control for reading about a thing
+	# covered the thing. The bottom edge is where nothing is exhibited.
+	var view: Vector2 = main.hud.read.get_viewport_rect().size
 	var read_rect: Rect2 = main.hud.read.get_global_rect()
-	ok(read_rect.position.y > item.y, "Read description stands below the item, not over it")
-	ok(absf(read_rect.get_center().x - item.x) < 30.0, "and is centred under it")
+	ok(read_rect.end.y > view.y - 40.0, "Read description sits along the bottom edge")
+	ok(absf(read_rect.get_center().x - view.x * 0.5) < 8.0, "and centred across it")
+	ok(not read_rect.intersects(main.hud.back.get_global_rect()), "clear of Back beside it")
 	await _shot("card_offered")
 
 	main.hud.read_pressed.emit()
