@@ -1,13 +1,24 @@
-name: itch track
+name: build
 
-# The GDScript web build (docs/ARCHITECTURE.md ADR-14): the puzzle tests
-# headless, every room rendered under xvfb, the Web export, the export booted
-# in headless Chromium, and, on main, the upload to itch.io. Every step
-# delegates to a script in scripts/ so CI and a developer's machine run the
-# identical build (CLAUDE.md 4.1); nothing is built in YAML.
+# ONE workflow, because one commit should start ONE run. There were two files
+# here with identical triggers, checks.yml and this, so every push and every
+# pull request produced two runs and a merge to main produced two more. Two
+# jobs in one workflow is the same work with one entry in the Actions list.
 #
-# Triggers are disjoint so one commit never starts two runs: pull_request
-# covers every branch, push covers main.
+# What runs: the renderer proof (docs/ARCHITECTURE.md ADR-0), and the GDScript
+# web build (ADR-14) with the puzzle tests, every room rendered under xvfb, the
+# audio gate, the Web export, that export booted in headless Chromium and
+# played to its end, and, on main, the upload to itch.io.
+#
+# The writing style check is deliberately NOT here. Em and en dashes are a rule
+# about how this repository is written, which belongs to whoever is writing:
+# ./scripts/check-style.sh is run before pushing, not discovered from a red
+# build. CLAUDE.md 1.
+#
+# Every step delegates to a script in scripts/ so CI and a developer's machine
+# run the identical build (CLAUDE.md 4.1); nothing is built in YAML. Triggers
+# are disjoint so one commit never starts two runs: pull_request covers every
+# branch, push covers main.
 
 on:
   pull_request:
@@ -29,6 +40,24 @@ permissions:
   contents: read
 
 jobs:
+  render:
+    name: The engine renders
+    # Requirement 0 (docs/ARCHITECTURE.md ADR-0) is proven in the Claude Code
+    # sandbox by rule, and this job is the same proof on a runner: it installs
+    # a software Vulkan driver, downloads the pinned editor, compiles the C#
+    # and draws a Forward+ frame with twelve shadow casting lights. About one
+    # minute, and it fails on a black frame.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo ./scripts/install-sandbox-deps.sh
+      - run: ./scripts/render-proof.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forward-plus-frame
+          path: docs/reference/forward_plus_lavapipe_proof.png
+
   build:
     name: Test, export, verify, deploy
     runs-on: ubuntu-latest
@@ -83,7 +112,7 @@ jobs:
       # The audio gate renders every sound from its source, csound for the
       # effects and fluidsynth for the score, and measures what comes out. It
       # exists because a release shipped as static and every other suite was
-      # green throughout (docs/AUDIO.md section 5).
+      # green throughout (docs/AUDIO.md section 7).
       - name: Install the audio tools
         run: ./scripts/install-audio-tools.sh
 

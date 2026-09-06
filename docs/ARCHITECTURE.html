@@ -274,7 +274,7 @@ outbound HTTPS through the agent proxy):</p>
 </tr>
 <tr>
 <td>The same script on a GitHub runner</td>
-<td>the same frame, 712 ms, so <code>.github/workflows/checks.yml</code> runs it on every pull request</td>
+<td>the same frame, 712 ms, so the <code>render</code> job in <code>.github/workflows/build.yml</code> runs it on every pull request</td>
 </tr>
 </tbody>
 </table></div>
@@ -951,7 +951,8 @@ would attach.</p>
 General MIDI soundfont; an effect is rendered from a Csound <code>.csd</code> by
 <strong>csound</strong>; both are mastered by <strong>sox</strong> in one shared chain. Two, and never a
 third. <code>docs/AUDIO.md</code> holds the whole of it: the instrument set, the world's
-scale and motifs, the sound design rules, the gate, and the post mortem.</p>
+scale and motifs, the method for making a new effect, the sound design rules,
+the gate, and the post mortem.</p>
 <p>Adopted from <code>RubenTipparach/tom-lander</code> (read with permission, 2026-09-04),
 whose <code>audio.md</code> documents both a Strudel driven Node synth and an orchestral
 route through MIDI to fluidsynth or LMMS. The score takes the second. The
@@ -1206,7 +1207,8 @@ still passes.</p>
 <hr />
 <h2 id="d0-13-tests-and-the-suites-that-grow-with-the-code">13. Tests, and the suites that grow with the code</h2>
 <p>Every suite that exists must pass before a push (CLAUDE.md 9). Today:</p>
-<pre><code class="language-sh">./scripts/check-style.sh                     # no em or en dashes, anywhere
+<pre><code class="language-sh">./scripts/check-style.sh                     # no em or en dashes, anywhere. Run before a
+                                             # push; deliberately not a CI job (CLAUDE.md 1)
 ./scripts/render-proof.sh                    # the engine installs, compiles C#, and draws a lit
                                              # Forward+ frame here (ADR-0); about two minutes cold
 node mockups/elmorian-exhibit/test.mjs       # the four puzzles, solved without a browser
@@ -1220,8 +1222,9 @@ node mockups/elmorian-exhibit/playthrough.mjs --landscape # and at 844x390
 <p>The playthrough is the one that plays the game, and it already found two defects the
 unit tests were blind to (black pads from a clobbered userData, and stations framed for
 the wrong screen). It taps where a player taps and reads <code>ftDebug</code> only to observe.</p>
-<p>The itch track (ADR-14), which <code>.github/workflows/deploy-itch.yml</code> runs on every push
-and pull request, deploying on <code>main</code>:</p>
+<p>The itch track (ADR-14). <code>.github/workflows/build.yml</code> is the ONE workflow, with the
+renderer proof and this as its two jobs, and it deploys on <code>main</code>. It is one file
+because two files with the same triggers gave every commit two runs:</p>
 <pre><code class="language-sh">./scripts/check-config.sh            # build.config against the presets; the generated
                                      # scene and the sound effects against their sources
 ./scripts/run-tests.sh               # the puzzles headless (21), then every room and

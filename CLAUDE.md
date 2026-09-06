@@ -21,9 +21,14 @@ rule stays there. What is kept is what holds regardless of game.
 
 Straight ASCII hyphens only: in code, comments, docs, commit messages, PR bodies, in
 game text and chat. U+2014 and U+2013 are banned by codepoint.
-`scripts/check-style.sh` greps for them, and `.github/workflows/checks.yml` runs it on
-every push and pull request. Run it yourself before pushing rather than finding out
-from CI.
+`scripts/check-style.sh` greps for them by codepoint, so this file stays clean ASCII
+and does not report itself.
+
+**This is a rule about how the repository is written, so it belongs to whoever is
+writing: run the check before pushing.** It is deliberately not a CI job. A build that
+goes red over a punctuation mark spends a runner and a cycle of somebody's attention on
+something the author could have seen in a second, and it teaches people to read a red
+build as noise.
 
 | Instead of a dash | Use |
 |---|---|
@@ -171,7 +176,8 @@ is how it is kept honest.
 
 Adopted from `RubenTipparach/tom-lander` (ADR-12) and subject to section 5 like every
 other asset. **Two pipelines, one per kind, and never a third.** `docs/AUDIO.md` is the
-whole of it, including the world's scale and motifs and the post mortem of the two
+whole of it: the two pipelines, the world's scale and motifs, the instrument set,
+the method for making a new effect, the gate, and the post mortem of the two
 versions that shipped wrong.
 
 - **A score is instruments playing notes**, so it is a `.mid` rendered headless by
