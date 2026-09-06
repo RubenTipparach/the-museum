@@ -144,11 +144,12 @@ try {
   await tapThing('stone', 0); await settle();
   ok((await state()).station === 'final' && !(await state()).card,
      'a tap on a seeing stone offers its label rather than opening it');
-  const stone = await q({ op: 'screenOf', kind: 'stone', i: 0, id: '' });
-  const readBtn = (await q({ op: 'hud' })).read;
+  const hud = await q({ op: 'hud' });
+  const readBtn = hud.read;
   ok(readBtn.visible, 'Read description appears');
-  ok(readBtn.y > stone.y, 'and stands below the stone, not over it');
-  ok(Math.abs(readBtn.x + readBtn.w / 2 - stone.x) < readBtn.w, 'and is centred under it');
+  ok(readBtn.y + readBtn.h > size.height - 60, 'and sits along the bottom edge, not over the item');
+  ok(Math.abs(readBtn.x + readBtn.w / 2 - size.width / 2) < 12, 'and centred across the screen');
+  ok(readBtn.x > hud.back.x + hud.back.w, 'clear of Back beside it');
   await shot('final_stones');
   await tapHud('read'); await settle();
   ok((await state()).card, 'and pressing it opens the label');
