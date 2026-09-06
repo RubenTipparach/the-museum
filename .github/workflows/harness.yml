@@ -1,0 +1,130 @@
+name: harness
+
+# The three checks that are NOT the build's business, on a button.
+#
+# Each of these proves a claim rather than guarding a commit: that the engine
+# draws a frame here at all (ADR-0), that every sound still renders byte for
+# byte from its own source (docs/AUDIO.md), that the exported build can be
+# played from the forecourt to the ancestor alcove on a phone sized screen
+# (ADR-14). They are slow, they need a software Vulkan driver, a 148 MB
+# soundfont and a Chromium, and none of them is a reason for a push to be red.
+# So they run when somebody asks: Actions, harness, Run workflow.
+#
+# Every one of them delegates to the same script a developer runs locally, so
+# this file adds a trigger and nothing else (CLAUDE.md 4.1).
+
+on:
+  workflow_dispatch:
+    inputs:
+      render:
+        description: "The engine renders: a Forward+ frame under lavapipe"
+        type: boolean
+        required: false
+        default: true
+      audio:
+        description: "Every sound re-rendered from its source and gated"
+        type: boolean
+        required: false
+        default: true
+      playtest:
+        description: "Export the web build and play it to its end"
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: The engine renders
+    if: inputs.render
+    # Requirement 0 (docs/ARCHITECTURE.md ADR-0): a software Vulkan driver, the
+    # pinned editor, the C# compiled, and a Forward+ frame with twelve shadow
+    # casting lights. About a minute, and it fails on a black frame.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo ./scripts/install-sandbox-deps.sh
+      - run: ./scripts/render-proof.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forward-plus-frame
+          path: docs/reference/forward_plus_lavapipe_proof.png
+
+  audio:
+    name: Every sound matches its source
+    if: inputs.audio
+    # csound renders the effects, fluidsynth the score, sox masters both, and
+    # tools/check_audio.py measures what comes out: spectral flatness, register,
+    # level, and every note against data/world/music.json. It exists because a
+    # release shipped as static and every other suite was green throughout
+    # (docs/AUDIO.md section 7).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/install-audio-tools.sh
+      - run: ./scripts/render-audio.sh --check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audio
+          path: itch/assets/audio
+          retention-days: 14
+
+  playtest:
+    name: Play the web build to its end
+    if: inputs.playtest
+    # Boots the export in headless Chromium and then plays it through the real
+    # input path, portrait and landscape: taps where a player taps, drags to
+    # turn, solves all three puzzles, and fails if the ancestor door cannot be
+    # reached. An export that succeeds is not a build that works.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read build config
+        id: config
+        run: |
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          source build.config
+          echo "godot_version=$GODOT_VERSION.$GODOT_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "flavor=$ITCH_GODOT_FLAVOR" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Godot and the web export templates
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tools/godot-standard
+            ~/.local/share/godot/export_templates
+          key: godot-${{ steps.config.outputs.godot_version }}-${{ steps.config.outputs.flavor }}-web
+
+      - name: Install Godot (standard) and the web templates
+        run: ./scripts/install-godot.sh standard
+
+      - name: Export the web build
+        run: ./scripts/build.sh
+
+      # The harnesses import playwright; package.json declares it and the
+      # lockfile pins it, so the browser installed here matches the package.
+      - name: Install the browser harnesses and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Boot the web build in headless Chromium
+        run: ./scripts/verify-build.sh
+
+      - name: Play it to its end
+        run: node itch/tests/playthrough.mjs builds/web
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playtest-frames
+          path: docs/reference/itch_*.png
+          retention-days: 14

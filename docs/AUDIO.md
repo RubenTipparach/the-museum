@@ -45,7 +45,7 @@ data/world/music.json     the world's scale, its six word pitches, its motifs
 block through General MIDI sounds like a wood block being PLAYED, because
 that is what a sampled instrument is: the strike is a musician's, the tuning
 is a note, and the room is a concert hall. A fingertip on a museum label is
-none of those. Section 5 has the whole account.
+none of those. Section 7 has the whole account.
 
 **Why not sfxr.** Also tried, and installed: `jsfxr` is a dependency and can
 be used where a retro blip is genuinely wanted. Everything it makes carries
@@ -62,7 +62,7 @@ cd assets/audio/sfx && csound door_open.csd    # one effect, by hand
 **The score's half is tom-lander's soundfont path, not its Strudel path.**
 That repo has two: a Node synth driven by Strudel patterns, and an orchestral
 route through MIDI to fluidsynth or LMMS. The Strudel route was tried here
-first and is gone, with the reason in section 5.
+first and is gone, with the reason in section 7.
 
 **LMMS is installed and is the second seat, not a second pipeline.** The same
 `.mid` opens in it (`xvfb-run -a lmms --allowroot render out.mmp -o out.wav
@@ -131,7 +131,7 @@ timpani strikes three times in the whole piece, the last the quietest.
 
 ---
 
-## 2a. The instrument set
+## 3. The instrument set
 
 `assets/audio/sfx/museum.orc` is the one place a body is described, and every
 effect is struck out of it. Change a body there and every sound made of it
@@ -160,7 +160,127 @@ not tell a changed sound from a re-rendered one.
 
 ---
 
-## 3. Sound design rules
+## 4. Making an effect, in order
+
+The method, not just the pipeline. Every effect in the exhibit was made this
+way, and the traps at the end are ones this repository actually fell into.
+
+### 1. Describe the object, never the sound
+
+Write one sentence about the THING: what it is, what it is made of, how big
+it is, and what is happening to it. "A stone slab going down into the floor:
+it catches, it slips, it seats." That sentence goes at the top of the `.csd`
+and it decides every number below it. A sentence about the sound instead of
+the object ("a low rumbly whoosh") is how the first version of this got
+built, and it produced noise.
+
+### 2. Pick a body
+
+Section 3 is the list. If none of the eight IS the object, add one, per the
+rules further down. Do not force a slab to be a wood block by tuning it up.
+
+### 3. Pitch comes from size
+
+A struck body's fundamental falls as it gets bigger, so size chooses the
+number rather than taste. The exhibit's own anchors, useful as a ruler:
+
+| the object | fundamental |
+|---|---|
+| a nail on card | a band at 1.9 to 3.1 kHz, not a pitch at all |
+| a small stone disc | 300 to 455 Hz (the three eyes, largest lowest) |
+| a stone ring on a plinth | about 250 Hz |
+| a stone cut to sing | the note it is cut to: D4 to C5 here |
+| a heavy slab's body | 95 and 150 Hz |
+| the seat of a door | 88 Hz, with the knock above it |
+
+Then check the number against the register rule in section 5: a fundamental
+under 200 Hz is felt and not heard on a phone, so it needs a knock on top.
+
+### 4. Decay comes from the material and how it is held
+
+Written in seconds, which the orchestra turns into a resonator Q. What the
+exhibit uses:
+
+| | seconds |
+|---|---|
+| a nail on card | 0.02 |
+| cut stone, struck | 0.1 to 0.3 |
+| a stone cut to sing | 1.5 |
+| bronze | 1.6 to 2.2 |
+| a slab's body while it moves | 0.09 |
+
+Anything held in a hand or bedded in a wall dies faster than the same
+material hanging free. If a sound feels like a musical instrument rather than
+an object, its decay is usually too long.
+
+### 5. Build it in three layers
+
+Most effects are two of these; only something that MOVES needs all three.
+
+1. **The contact**, which is what the two surfaces sound like meeting: a few
+   milliseconds of banded noise, its own score line so it can be tuned on its
+   own. This is usually what makes an effect audible on a phone.
+2. **The body**, which is the modal bank: the object ringing.
+3. **The movement**, if it slides or scrapes: noise in a band whose centre
+   wanders, so it catches and slips rather than hissing evenly.
+
+### 6. Level is authored, not normalised into place
+
+The `peak` on each entry in `effects()` is where that sound sits in the mix
+and it is a decision: a plaque tick at -12 dB, a footstep at -12, a stone
+notch at -5, a door at -1.5. The game never balances a sound at runtime.
+
+### 7. Render, gate, listen, repeat
+
+```sh
+python3 tools/gen_sfx.py                        # writes the .csd and renders it
+python3 tools/check_audio.py assets/audio/sfx/*.wav
+cd assets/audio/sfx && csound door_open.csd     # one sound, by hand, while tuning
+```
+
+The gate is the fast half of the loop and it catches the two failures that
+are invisible while you are close to the work: a sound drifting toward noise,
+and a sound sitting where a phone cannot reproduce it. It cannot tell you
+whether the thing sounds like the object it is meant to be. That is a person
+with the sampler, which is why one gets sent.
+
+### Adding a body to the orchestra
+
+Only when no existing body IS the object.
+
+- **Name it for the object**, not for a synthesis technique: `slab`, not
+  `lowpass_bank`.
+- **Ratios are inharmonic** unless the thing is meant to hold a pitch. The
+  stone bank is 1, 1.47, 2.09, 2.71, 3.36; the singing stone is nearly
+  harmonic on purpose; bronze uses a bell's own 1, 2.76, 5.40, 8.93.
+- **High modes decay faster than low ones.** That single fact is most of what
+  makes a strike sound struck, and the `damp` term is what sets the slope.
+- **Take decay in seconds** through `Qof`, so the score reads in the units
+  the sound was designed in.
+- **Scale the bank's output** so a score amplitude near 1 lands near full
+  scale. `mode` has enormous gain at high Q, and an unscaled bank clips the
+  render before sox ever sees it.
+
+### The traps, all of which were fallen into
+
+- **A modal bank clips before you hear it.** csound writes 32 bit float here
+  for that reason and sox sets the level afterwards; the first render
+  overflowed by 18x and reported 78956 samples out of range.
+- **Trim after normalising, never before.** A trim threshold is a share of
+  full scale, and judging a quiet float signal against it deleted the
+  smallest effects to nothing.
+- **Seed the orchestra and turn sox's dither off**, or two renders of an
+  unchanged source differ and `--check` cannot tell a changed sound from a
+  re-rendered one.
+- **A pitched effect belongs in the octave of the phrase it is part of.** The
+  speech pads are a melody; one of them written an octave low is a hole in
+  the phrase on a phone, whatever the fiction says about that word.
+- **A sound that is only low is a sound nobody hears.** Every heavy effect
+  carries a knock in the mids as well as its weight underneath.
+
+---
+
+## 5. Sound design rules
 
 - **A sound is an object, not an instrument.** The body is chosen for what the
   thing IS, and it is struck rather than played: a nail on card for a
@@ -178,7 +298,7 @@ not tell a changed sound from a re-rendered one.
 
 ---
 
-## 4. The gate
+## 6. The gate
 
 `tools/check_audio.py`, pure stdlib so it runs wherever the build does. It
 measures the three things that went wrong:
@@ -194,7 +314,7 @@ measures the three things that went wrong:
 
 ---
 
-## 5. What went wrong the first time, and why it is written down
+## 7. What went wrong the first time, and why it is written down
 
 The first audio shipped and the owner heard it as "random static, awful". It
 was, and each cause is worth keeping:

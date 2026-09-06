@@ -91,7 +91,7 @@ outbound HTTPS through the agent proxy):
 | `xvfb-run godot --rendering-driver vulkan --rendering-method forward_plus` | started: "Vulkan 1.4.318 - Forward+ - llvmpipe (LLVM 20.1.2)" |
 | A 960x540 frame with 12 shadow casting spotlights, volumetric fog, SSAO, glow and AgX tone mapping | drawn and written to PNG, 680 ms per frame cold and 227 ms with the shader cache warm, in software |
 | The frame itself | `reference/forward_plus_lavapipe_proof.png`: twelve lit cones in fog over shadowed pedestals, 9.1 percent of pixels above black |
-| The same script on a GitHub runner | the same frame, 712 ms, so `.github/workflows/checks.yml` runs it on every pull request |
+| The same script on a GitHub runner | the same frame, 712 ms, in the `render` job of `.github/workflows/harness.yml`, which runs on request rather than on every commit |
 
 ![](reference/forward_plus_lavapipe_proof.png)
 
@@ -632,7 +632,8 @@ would attach.
 General MIDI soundfont; an effect is rendered from a Csound `.csd` by
 **csound**; both are mastered by **sox** in one shared chain. Two, and never a
 third. `docs/AUDIO.md` holds the whole of it: the instrument set, the world's
-scale and motifs, the sound design rules, the gate, and the post mortem.
+scale and motifs, the method for making a new effect, the sound design rules,
+the gate, and the post mortem.
 
 Adopted from `RubenTipparach/tom-lander` (read with permission, 2026-09-04),
 whose `audio.md` documents both a Strudel driven Node synth and an orchestral
@@ -844,9 +845,11 @@ still passes.
 Every suite that exists must pass before a push (CLAUDE.md 9). Today:
 
 ```sh
-./scripts/check-style.sh                     # no em or en dashes, anywhere
+./scripts/check-style.sh                     # no em or en dashes, anywhere. Run before a
+                                             # push; deliberately not a CI job (CLAUDE.md 1)
 ./scripts/render-proof.sh                    # the engine installs, compiles C#, and draws a lit
-                                             # Forward+ frame here (ADR-0); about two minutes cold
+                                             # Forward+ frame here (ADR-0); about two minutes cold.
+                                             # Also not a CI job: it proves a claim about a frame
 node mockups/elmorian-exhibit/test.mjs       # the four puzzles, solved without a browser
 python3 tools/gen_museum_textures.py --check # the texture set matches its generator
 ./scripts/build-exhibit.sh elmorian          # the shell builds, passes the gate, exports, renders
@@ -860,8 +863,11 @@ The playthrough is the one that plays the game, and it already found two defects
 unit tests were blind to (black pads from a clobbered userData, and stations framed for
 the wrong screen). It taps where a player taps and reads `ftDebug` only to observe.
 
-The itch track (ADR-14), which `.github/workflows/deploy-itch.yml` runs on every push
-and pull request, deploying on `main`:
+The itch track (ADR-14). `.github/workflows/build.yml` is the one workflow a commit
+starts, and it deploys on `main`. It builds, tests and deploys, and nothing else: there
+were two workflow files with the same triggers once, which gave every commit two runs,
+and the checks that prove a claim rather than guard a commit have since moved out of it
+(see below):
 
 ```sh
 ./scripts/check-config.sh            # build.config against the presets; the generated
@@ -882,6 +888,16 @@ The web playthrough is the one that plays the GAME: it taps where a player taps,
 to turn, presses the same buttons, and reads `ftDebug` only to observe. It found the
 same class of defect the prototype's did: a tap that lands, a control that is where
 it says it is, a save that comes back.
+
+**Four of those are run here, not by CI.** `build.yml` runs `check-config.sh`,
+`test.mjs`, `run-tests.sh`, `build.sh` and the deploy: it builds, tests and ships.
+The style check, the render proof, the audio gate and the playtest each prove a CLAIM
+somebody is making, about punctuation, a frame, a sound or a playthrough, and a claim
+nobody made is not a reason for a commit to be red. They also carry the expensive
+installs: a software Vulkan driver, a 148 MB soundfont, a Chromium. So they are run in
+the sandbox before the claim, and `.github/workflows/harness.yml` is the same three on
+a `workflow_dispatch` button, each a job that can be switched off, for when the answer
+is wanted from a runner instead.
 
 As the desktop track lands:
 

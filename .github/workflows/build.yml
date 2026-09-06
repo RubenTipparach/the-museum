@@ -1,13 +1,21 @@
-name: itch track
+name: build
 
-# The GDScript web build (docs/ARCHITECTURE.md ADR-14): the puzzle tests
-# headless, every room rendered under xvfb, the Web export, the export booted
-# in headless Chromium, and, on main, the upload to itch.io. Every step
-# delegates to a script in scripts/ so CI and a developer's machine run the
-# identical build (CLAUDE.md 4.1); nothing is built in YAML.
+# The CI builds, tests and deploys. That is the whole of its job.
 #
-# Triggers are disjoint so one commit never starts two runs: pull_request
-# covers every branch, push covers main.
+# What is NOT here, and why: three checks that look like CI and are not. The
+# renderer proof draws a frame to prove the engine runs headless, the audio
+# render re-renders every sound from csound and fluidsynth to prove it has not
+# drifted, and the playtest drives the exported build through a browser. All
+# three are harness checks, run before making a claim about a frame, a sound or
+# a playthrough, and none of them is a reason for a commit to be red. They live
+# in .github/workflows/harness.yml, which only runs when someone asks it to.
+# The writing style check (em and en dashes, CLAUDE.md 1) is out for the same
+# reason: it belongs to whoever is writing, not to the build.
+#
+# Every step delegates to a script in scripts/ so CI and a developer's machine
+# run the identical build (CLAUDE.md 4.1); nothing is built in YAML. Triggers
+# are disjoint so one commit never starts two runs: pull_request covers every
+# branch, push covers main.
 
 on:
   pull_request:
@@ -30,9 +38,9 @@ permissions:
 
 jobs:
   build:
-    name: Test, export, verify, deploy
+    name: Test, export, deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       CAN_DEPLOY: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
 
@@ -74,40 +82,20 @@ jobs:
       - name: Install Godot (standard) and the web templates
         run: ./scripts/install-godot.sh standard
 
-      # The scene test renders under xvfb on Mesa's software GL; installed
-      # explicitly because run-tests.sh skips that test when xvfb is missing,
-      # and a test that quietly skips is worse than one that fails.
+      # The scene test is a test: 23 assertions about what the real scene puts
+      # on screen, that a tap offers a label rather than opening it, that Read
+      # sits under the item, that Close is at the foot of the card. It needs a
+      # rendering context to ask any of that, hence xvfb, and it is installed
+      # explicitly because run-tests.sh skips the test when xvfb is missing and
+      # a test that quietly skips is worse than one that fails.
       - name: Install xvfb and Mesa
         run: sudo apt-get install -y -qq xvfb mesa-utils libgl1-mesa-dri
 
-      # The audio gate renders every sound from its source, csound for the
-      # effects and fluidsynth for the score, and measures what comes out. It
-      # exists because a release shipped as static and every other suite was
-      # green throughout (docs/AUDIO.md section 5).
-      - name: Install the audio tools
-        run: ./scripts/install-audio-tools.sh
-
-      - name: Every sound matches its source, and is not static
-        run: ./scripts/render-audio.sh --check
-
-      - name: Puzzle tests and every room rendered
+      - name: Puzzle tests and the scene assertions
         run: ./scripts/run-tests.sh
 
       - name: Export the web build
         run: ./scripts/build.sh
-
-      # The harnesses import playwright; package.json declares it and the
-      # lockfile pins it, so the browser installed here matches the package.
-      - name: Install the browser harnesses and Chromium
-        run: |
-          npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
-
-      - name: Boot the web build in headless Chromium
-        run: ./scripts/verify-build.sh
-
-      - name: Play the web build to its end
-        run: node itch/tests/playthrough.mjs builds/web
 
       - name: Upload the build and the frames
         uses: actions/upload-artifact@v4

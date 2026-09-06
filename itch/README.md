@@ -47,9 +47,12 @@ node itch/tests/playthrough.mjs --landscape  # 844x390
 ./scripts/deploy-itch.sh              # butler push, needs BUTLER_API_KEY
 ```
 
-CI (`.github/workflows/deploy-itch.yml`) runs the same scripts and deploys on
-main. The page's own configuration on itch.io is embed, 390 wide, with the
-fullscreen button and mobile friendly on.
+CI (`.github/workflows/build.yml`) runs the same scripts and deploys on main:
+the config check, the prototype's checks, the puzzle tests and the scene
+assertions, the export, the upload. The playtest above is not in it, nor is the
+audio gate nor the render proof; those three are `.github/workflows/harness.yml`,
+which runs on request. The page's own configuration on itch.io is embed, 390
+wide, with the fullscreen button and mobile friendly on.
 
 ## Regenerate, do not edit
 
