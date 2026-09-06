@@ -626,34 +626,54 @@ would attach.
 
 ---
 
-## ADR-12: Audio, on the pipeline the owner already has
+## ADR-12: Two audio pipelines, one per kind, and the split is the decision
 
-**Decision:** adopt the audio pipeline from `RubenTipparach/tom-lander` (read with the
-owner's permission, 2026-09-04) unchanged in shape, because it already satisfies
-CLAUDE.md 5: every sound is a static file with a committed source, and both are made by
-a script rather than by hand once.
+**Decision:** a score is rendered from a `.mid` by **fluidsynth** against the
+General MIDI soundfont; an effect is rendered from a Csound `.csd` by
+**csound**; both are mastered by **sox** in one shared chain. Two, and never a
+third. `docs/AUDIO.md` holds the whole of it: the instrument set, the world's
+scale and motifs, the sound design rules, the gate, and the post mortem.
 
-| Kind | Tool | Source committed | Product |
-|---|---|---|---|
-| Music | Strudel patterns, rendered offline by a small Node synth (`tools/strudel/render_offline.mjs` in that repo), then encoded | the `.strudel` pattern beside the render | `.mp3` or `.ogg` |
-| Orchestral passes | the same pattern exported to multitrack MIDI, taken into a DAW off box | the `.mid` and the exporter | rendered stems |
-| Sound effects | pure stdlib Python synthesis, seeded so a rerun is byte identical (`tools/generate_weapon_sfx.py` is the model) | the generator script | `.wav` |
+Adopted from `RubenTipparach/tom-lander` (read with permission, 2026-09-04),
+whose `audio.md` documents both a Strudel driven Node synth and an orchestral
+route through MIDI to fluidsynth or LMMS. The score takes the second. The
+effects take neither, because that repo scores a game and does not do foley.
 
-**What changes for this game.** Tom Lander's score is chip adjacent at 152 BPM; a
-museum after hours is close to silent, and its audio is mostly room tone, the hum of a
-case light, and the sound an object makes when it is turned. So the SFX generators
-matter more than the music does, and the first audio work is a room tone bed and an
-object handling set rather than a theme.
+| | Score | Effects |
+|---|---|---|
+| source | `assets/audio/music/*.mid` | `assets/audio/sfx/*.csd`, `museum.orc` |
+| renderer | fluidsynth + FluidR3_GM | csound |
+| written by | `tools/gen_music.py` | `tools/gen_sfx.py` |
+| editable in | LMMS, Ardour, MuseScore | any text editor |
 
-**The one thing this pipeline does not yet do is the resonance puzzle** (ADR-5), which
-needs a tone whose pitch the game controls at runtime from a puzzle's state. That is a
-synthesised voice in the engine rather than a rendered file, and it is the single audio
-exception worth planning: the pitch table is authored data, the synthesis is code, and
-the puzzle's correct answer is a value in the same table, so nothing has to agree with
-a waveform by ear.
+**Why the split is not a violation of CLAUDE.md 4.1.** That rule forbids two
+implementations of LIKE functionality. A soundfont is an orchestra: it is the
+right tool for notes and the wrong one for a slab of stone entering a floor,
+because a sampled instrument carries a musician's strike, a tuned pitch and a
+concert room. Csound is a synthesis language: modal resonator banks give a
+struck body its inharmonic ratios and its high modes dying first, and a band
+of noise whose centre wanders gives friction that catches and slips. What IS
+shared is shared: one mastering chain, one gate, one world data file, one
+render script.
 
-Audio is not in the first milestone. This ADR exists so that when it starts, nobody
-invents a second way of making a sound.
+**The instrument set is one file.** `museum.orc` describes eight bodies
+(stone, singing stone, bronze, label card, slab, seat, carpet, air) and every
+effect is struck out of it, so a body is described once. Decay is written in
+seconds and converted to a resonator Q inside the orchestra, because a time
+is a thing a person can reason about.
+
+**A render must repeat**, or `--check` cannot tell a changed sound from a
+re-rendered one. The orchestra is seeded (`seed 6`) because csound otherwise
+seeds its noise from the clock, and sox is told not to dither because dither
+is random.
+
+**Superseded twice, and both are recorded because each was the same mistake
+in a different coat.** The first cut hand rolled every effect in Python out of
+filtered noise and shipped as static. The second moved to the soundfont,
+which fixed that and made every effect an instrument: the owner asked "why are
+sfx piano?", and the answer was that they were. CLAUDE.md 5 has always said a
+real tool driven headless, the way Blender makes the models; the second
+lesson is that it also has to be the RIGHT real tool for the asset.
 
 ---
 
@@ -773,14 +793,14 @@ ported one file to one file, with the same split ADR-2 asks for:
   script gives every solid part a collision body made from its own mesh and names the
   door slabs and plaques on those bodies; role materials are bound at load from
   `data/materials.json`, the same table the prototype now reads.
-- Audio, per ADR-12 and CLAUDE.md 7: eighteen effects from `tools/gen_sfx.py`
-  (seeded, `--check`, 1.5 MB of wav), clicks and stone ticks for the puzzles, a two
-  and a half second rocky slide for a door, chimes, a footstep, a room tone bed; and
-  the music, "Hall Six", a Strudel pattern in `assets/audio/music/hall_six.strudel`
-  rendered offline by the tom-lander renderer vendored in `tools/strudel/` (one change:
-  it takes a plain source file) to 164 s of ogg, slow and mostly empty in the manner
-  of Riven, D Phrygian, a drone, pads, a reed that says four notes and waits, a far
-  drum and water dripping.
+- Audio, per ADR-12 and `docs/AUDIO.md`: eighteen effects as Csound scores against one
+  instrument set, and a score of three and three quarter minutes as MIDI through the
+  soundfont. The effects are struck bodies rather than instruments (a nail on card for
+  a fingertip, cut stone for a disc turning a notch, a slab that catches and slips and
+  then seats), and the six speech pads are stones cut to sing at the six notes of the
+  lexicon, so a phrase in room 3 is a phrase of music. "Hall Six" states the house theme
+  on bells, answers it with the gaze cell on kalimba at three registers, sets the
+  greeting against the farewell, and stops on the held sixth.
 
 **The HUD** is authored in `itch/scenes/hud.tscn` at a 390 unit short side, fixed
 panels, the card's text scrolling inside it. `window/stretch` is `canvas_items` with
@@ -854,7 +874,8 @@ node itch/tests/playthrough.mjs      # plays the export to its end at 390x844, m
 node itch/tests/playthrough.mjs --touch      # the same through touch events
 node itch/tests/playthrough.mjs --landscape  # and at 844x390
 ./scripts/build-props.sh             # the props build, gate and render
-python3 tools/gen_sfx.py --check     # the sound effects match their generator
+./scripts/render-audio.sh --check    # every sound matches its .mid, and passes the
+                                     # gate: not static, in register, in the scale
 ```
 
 The web playthrough is the one that plays the GAME: it taps where a player taps, drags

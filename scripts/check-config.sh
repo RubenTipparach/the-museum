@@ -44,9 +44,13 @@ else
   done < <(known_targets)
 fi
 
-step "Checking the generated scene and the assets match their sources"
+# The audio is NOT checked here. It is rendered by fluidsynth, which this
+# check does not install and does not need: ./scripts/render-audio.sh --check
+# owns it and installs its own tools first. Calling it from here made a
+# config check fail on a missing renderer, which is a confusing way to say
+# nothing about the config.
+step "Checking the generated scene matches its source"
 if python3 "$REPO_ROOT/tools/gen_itch_scene.py" --check; then pass "exhibit.tscn matches the layout"; else fail "exhibit.tscn has drifted from the layout; rerun tools/gen_itch_scene.py"; fi
-if python3 "$REPO_ROOT/tools/gen_sfx.py" --check >/dev/null; then pass "the sound effects match their generator"; else fail "a sound effect drifts from tools/gen_sfx.py"; fi
 
 if [[ "$failures" -gt 0 ]]; then
   printf '\n%d problem(s) found.\n' "$failures" >&2

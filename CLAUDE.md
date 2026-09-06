@@ -167,13 +167,33 @@ is how it is kept honest.
 - **One count everywhere, one difference per thing.** Section 1 of `docs/WORLD.md` is
   the rule, and `tools/verify_world.py` fails the build when something breaks it.
 
-## 7. Audio comes from the pipeline that already exists
+## 7. Audio is made by the tool the sound calls for
 
 Adopted from `RubenTipparach/tom-lander` (ADR-12) and subject to section 5 like every
-other asset: music is a Strudel pattern rendered offline, with the `.strudel` source
-committed beside the render; sound effects are seeded pure stdlib Python synthesis, with
-the generator committed beside the `.wav`. No sound arrives in this repository without
-the thing that made it.
+other asset. **Two pipelines, one per kind, and never a third.** `docs/AUDIO.md` is the
+whole of it, including the world's scale and motifs and the post mortem of the two
+versions that shipped wrong.
+
+- **A score is instruments playing notes**, so it is a `.mid` rendered headless by
+  fluidsynth against the General MIDI soundfont. It opens in LMMS, Ardour or MuseScore.
+- **An effect is an object making a noise**, so it is a Csound `.csd` scored against
+  `assets/audio/sfx/museum.orc` and rendered headless by csound: modal resonator banks
+  for a struck body, friction inside a band for stone across stone. It opens in any text
+  editor, and `csound door_open.csd` renders it.
+- Both are mastered by **sox**, in one chain, and the source is committed beside the
+  product in every case.
+
+- **A sound is an object, not an instrument.** A wood block through a soundfont sounds
+  like a wood block being PLAYED, which is not what a fingertip on a label sounds like.
+  No noise beds: noise appears only where a real object makes it, band limited and under
+  a tonal body.
+- **Everything must survive a phone speaker**, so an effect carries a knock in the mids
+  as well as its weight underneath, and a pitched effect is not written an octave below
+  the phrase it belongs to.
+- **A render must repeat.** The orchestra is seeded and sox is told not to dither, so
+  `./scripts/render-audio.sh --check` can tell a changed sound from a re-rendered one.
+- **`tools/check_audio.py` is the gate** and CI runs it: spectral flatness (how much
+  like static it is), register, level, and every note against `data/world/music.json`.
 
 ## 8. Procedural generation is a build step, and it is the exception
 

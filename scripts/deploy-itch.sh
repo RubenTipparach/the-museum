@@ -60,8 +60,25 @@ main() {
     step "Dry run complete, nothing uploaded"
     return 0
   fi
-  step "Waiting for itch.io to finish processing"
-  butler_run status "$ITCH_USER/$ITCH_GAME" >&2 || warn "could not read build status"
+  # Per channel, and not immediately. A push returns as soon as the bytes are
+  # in ("Build is now processing"), and the channel does not exist until
+  # itch.io has finished with them, so asking about the project a second later
+  # printed "No channel found" over a push that had worked: a deploy that
+  # looked failed and was not. Ask about the channel actually pushed, give it
+  # a few seconds, and say plainly that processing is not an error.
+  local name
+  for name in "${targets[@]}"; do
+    load_target "$name"
+    step "Waiting for itch.io to process $TARGET_CHANNEL"
+    local tries
+    for tries in 1 2 3 4 5; do
+      if butler_run status "$ITCH_USER/$ITCH_GAME:$TARGET_CHANNEL" 2>&1 | tee /dev/stderr | grep -q "^Channel"; then
+        break
+      fi
+      [[ "$tries" == 5 ]] && log "still processing; itch.io finishes on its own, the upload is done"
+      sleep 5
+    done
+  done
   step "Deploy complete: https://$ITCH_USER.itch.io/$ITCH_GAME"
 }
 
