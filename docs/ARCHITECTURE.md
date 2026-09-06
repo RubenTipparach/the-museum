@@ -626,34 +626,53 @@ would attach.
 
 ---
 
-## ADR-12: Audio, on the pipeline the owner already has
+## ADR-12: Audio is MIDI played by a real instrument, and the pipeline is one
 
-**Decision:** adopt the audio pipeline from `RubenTipparach/tom-lander` (read with the
-owner's permission, 2026-09-04) unchanged in shape, because it already satisfies
-CLAUDE.md 5: every sound is a static file with a committed source, and both are made by
-a script rather than by hand once.
+**Decision:** every sound in this game, effect and score alike, is a `.mid`
+rendered offline by **fluidsynth** against the General MIDI soundfont and
+mastered by one shared step. `docs/AUDIO.md` is the whole of it: the pipeline,
+the world's scale and motifs, the sound design rules, the gate, and what went
+wrong the first time.
 
-| Kind | Tool | Source committed | Product |
+Adopted from `RubenTipparach/tom-lander` (read with permission, 2026-09-04),
+and specifically its **soundfont path** rather than its Strudel one. That
+repo documents both: a Node synth driven by Strudel patterns for its chip
+score, and a route through MIDI to fluidsynth or LMMS for anything meant to
+sound like an instrument. A museum at night is the second case.
+
+| Kind | Source, committed | Product | Made by |
 |---|---|---|---|
-| Music | Strudel patterns, rendered offline by a small Node synth (`tools/strudel/render_offline.mjs` in that repo), then encoded | the `.strudel` pattern beside the render | `.mp3` or `.ogg` |
-| Orchestral passes | the same pattern exported to multitrack MIDI, taken into a DAW off box | the `.mid` and the exporter | rendered stems |
-| Sound effects | pure stdlib Python synthesis, seeded so a rerun is byte identical (`tools/generate_weapon_sfx.py` is the model) | the generator script | `.wav` |
+| Effects | `assets/audio/sfx/*.mid` | `.wav` | `tools/gen_sfx.py` |
+| Score | `assets/audio/music/*.mid` | `.ogg` | `tools/gen_music.py` |
+| Both | | | `tools/audio_render.py`, then `tools/check_audio.py` |
 
-**What changes for this game.** Tom Lander's score is chip adjacent at 152 BPM; a
-museum after hours is close to silent, and its audio is mostly room tone, the hum of a
-case light, and the sound an object makes when it is turned. So the SFX generators
-matter more than the music does, and the first audio work is a room tone bed and an
-object handling set rather than a theme.
+**Why a `.mid` is the right source.** CLAUDE.md 5 wants an editable source
+beside every product, and a `.mid` opens in LMMS, Ardour or MuseScore: a
+person can move a note without reading a line of our code, which is not true
+of a waveform or of a Python generator. LMMS is installed as the second seat
+on the same source, for anything that wants a real synth or effect chain.
 
-**The one thing this pipeline does not yet do is the resonance puzzle** (ADR-5), which
-needs a tone whose pitch the game controls at runtime from a puzzle's state. That is a
-synthesised voice in the engine rather than a rendered file, and it is the single audio
-exception worth planning: the pitch table is authored data, the synthesis is code, and
-the puzzle's correct answer is a value in the same table, so nothing has to agree with
-a waveform by ear.
+**The music is the world's.** The Elmorians count in sixes, so the scale has
+six notes (D natural minor without the second: one semitone in the whole
+scale, and no leading tone), the bars have six beats, and the six words of
+the lexicon ARE the six notes, so the speech puzzle's phrases are melodies
+the score quotes. `data/world/music.json` is the authority and
+`check_audio.py` refuses a note outside it.
 
-Audio is not in the first milestone. This ADR exists so that when it starts, nobody
-invents a second way of making a sound.
+**The one exception ADR-5 still reserves** is the resonance puzzle, whose
+pitch the game controls at runtime from puzzle state. That is a synthesised
+voice in the engine rather than a rendered file, the pitch table is authored
+data, and the puzzle's answer is a value in the same table.
+
+**Superseded:** the first cut of this ADR adopted tom-lander's Strudel path
+and hand rolled the effects as pure stdlib Python synthesis. It shipped, and
+the owner heard it as static, which is what it was: eighteen effects built
+out of filtered white noise and a score with 96% of its energy below 320 Hz.
+`docs/AUDIO.md` section 5 is the post mortem, and the lesson is one this
+document already contained. CLAUDE.md 5 says art comes from a real tool
+driven headless, the way Blender makes the models and Material Maker makes
+the textures. Audio was the one asset class where that was quietly skipped,
+and it was the one that shipped broken.
 
 ---
 
@@ -773,14 +792,14 @@ ported one file to one file, with the same split ADR-2 asks for:
   script gives every solid part a collision body made from its own mesh and names the
   door slabs and plaques on those bodies; role materials are bound at load from
   `data/materials.json`, the same table the prototype now reads.
-- Audio, per ADR-12 and CLAUDE.md 7: eighteen effects from `tools/gen_sfx.py`
-  (seeded, `--check`, 1.5 MB of wav), clicks and stone ticks for the puzzles, a two
-  and a half second rocky slide for a door, chimes, a footstep, a room tone bed; and
-  the music, "Hall Six", a Strudel pattern in `assets/audio/music/hall_six.strudel`
-  rendered offline by the tom-lander renderer vendored in `tools/strudel/` (one change:
-  it takes a plain source file) to 164 s of ogg, slow and mostly empty in the manner
-  of Riven, D Phrygian, a drone, pads, a reed that says four notes and waits, a far
-  drum and water dripping.
+- Audio, per ADR-12 and `docs/AUDIO.md`: eighteen effects and a three and three
+  quarter minute score, all of them `.mid` sources played by fluidsynth against the
+  General MIDI soundfont. The effects are chosen as objects (a wood block for a
+  fingertip, a marimba for stone on stone, a taiko for anything heavy) and the six
+  speech pads are tubular bells cut to the six notes of the lexicon, so a phrase in
+  room 3 is a phrase of music. "Hall Six" states the house theme on bells, answers it
+  with the gaze cell on kalimba at three registers, sets the greeting against the
+  farewell, and stops on the held sixth.
 
 **The HUD** is authored in `itch/scenes/hud.tscn` at a 390 unit short side, fixed
 panels, the card's text scrolling inside it. `window/stretch` is `canvas_items` with
@@ -854,7 +873,8 @@ node itch/tests/playthrough.mjs      # plays the export to its end at 390x844, m
 node itch/tests/playthrough.mjs --touch      # the same through touch events
 node itch/tests/playthrough.mjs --landscape  # and at 844x390
 ./scripts/build-props.sh             # the props build, gate and render
-python3 tools/gen_sfx.py --check     # the sound effects match their generator
+./scripts/render-audio.sh --check    # every sound matches its .mid, and passes the
+                                     # gate: not static, in register, in the scale
 ```
 
 The web playthrough is the one that plays the GAME: it taps where a player taps, drags

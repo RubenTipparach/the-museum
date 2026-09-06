@@ -167,13 +167,22 @@ is how it is kept honest.
 - **One count everywhere, one difference per thing.** Section 1 of `docs/WORLD.md` is
   the rule, and `tools/verify_world.py` fails the build when something breaks it.
 
-## 7. Audio comes from the pipeline that already exists
+## 7. Audio is MIDI played by a real instrument
 
 Adopted from `RubenTipparach/tom-lander` (ADR-12) and subject to section 5 like every
-other asset: music is a Strudel pattern rendered offline, with the `.strudel` source
-committed beside the render; sound effects are seeded pure stdlib Python synthesis, with
-the generator committed beside the `.wav`. No sound arrives in this repository without
-the thing that made it.
+other asset. **Every sound, effect and score alike, is a `.mid` rendered headless by
+fluidsynth against the General MIDI soundfont**, and the `.mid` is committed beside the
+product: it opens in LMMS, Ardour or MuseScore, so a person can move a note without
+reading our code. One pipeline, never two. `docs/AUDIO.md` is the whole of it, including
+the world's scale and motifs, and the post mortem of the version that shipped as static.
+
+- **A sound is an object, not a waveform.** The instrument is chosen for what the thing
+  is. No noise beds: noise appears only where a real object makes it, band limited and
+  under a tonal body.
+- **Everything must survive a phone speaker**, so an effect carries a knock in the mids
+  as well as its weight underneath.
+- **`tools/check_audio.py` is the gate** and CI runs it: spectral flatness (how much
+  like static it is), register, level, and every note against `data/world/music.json`.
 
 ## 8. Procedural generation is a build step, and it is the exception
 

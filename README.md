@@ -24,8 +24,8 @@ Pre-production, with the first hall playable twice over. The architecture and th
 are approved; the Elmorian exhibit was approved as a point and click prototype in
 three.js at `mockups/elmorian-exhibit/` that plays on a phone, and is now built in
 Godot at `itch/` (see `itch/README.md`), its shell and props built in Blender from
-`data/layout/elmorian.json` (docs/BLENDER.md), its sounds and its score from the
-ADR-12 pipeline. Game systems are prototyped as interactive pages and approved
+`data/layout/elmorian.json` (docs/BLENDER.md), its sounds and its score rendered from MIDI
+by fluidsynth (docs/AUDIO.md). Game systems are prototyped as interactive pages and approved
 before they are built (CLAUDE.md section 3).
 
 ```sh
@@ -36,6 +36,7 @@ python3 tools/build_mockup.py elmorian-exhibit # one self contained page from th
 ./scripts/run-tests.sh                         # the itch track: puzzles headless, every room rendered
 ./scripts/build.sh && ./scripts/verify-build.sh   # the Web export, booted in headless Chromium
 node itch/tests/playthrough.mjs                # and played to its end at phone size
+./scripts/render-audio.sh                      # every sound from its .mid, then the audio gate
 node mockups/elmorian-exhibit/playthrough.mjs  # plays it to the end at phone size
 python3 tools/render_doc.py                    # regenerate docs/ARCHITECTURE.html from the Markdown
 ```

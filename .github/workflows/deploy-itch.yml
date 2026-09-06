@@ -74,6 +74,15 @@ jobs:
       - name: Install xvfb and Mesa
         run: sudo apt-get install -y -qq xvfb mesa-utils libgl1-mesa-dri
 
+      # The audio gate renders every sound from its .mid and measures what
+      # comes out. It exists because a release shipped as static and every
+      # other suite was green throughout (docs/AUDIO.md section 5).
+      - name: Install the audio tools
+        run: ./scripts/install-audio-tools.sh
+
+      - name: Every sound matches its source, and is not static
+        run: ./scripts/render-audio.sh --check
+
       - name: Puzzle tests and every room rendered
         run: ./scripts/run-tests.sh
 
