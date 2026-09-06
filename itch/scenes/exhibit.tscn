@@ -1,0 +1,426 @@
+[gd_scene load_steps=37 format=3]
+
+[ext_resource type="Script" path="res://src/exhibit_view.gd" id="script"]
+[ext_resource type="PackedScene" path="res://assets/props/eye_disc_0.glb" id="p_eye_disc_0"]
+[ext_resource type="PackedScene" path="res://assets/props/eye_disc_1.glb" id="p_eye_disc_1"]
+[ext_resource type="PackedScene" path="res://assets/props/eye_disc_2.glb" id="p_eye_disc_2"]
+[ext_resource type="PackedScene" path="res://assets/props/plinth.glb" id="p_plinth"]
+[ext_resource type="PackedScene" path="res://assets/props/peg.glb" id="p_peg"]
+[ext_resource type="PackedScene" path="res://assets/props/ring_0.glb" id="p_ring_0"]
+[ext_resource type="PackedScene" path="res://assets/props/ring_1.glb" id="p_ring_1"]
+[ext_resource type="PackedScene" path="res://assets/props/ring_2.glb" id="p_ring_2"]
+[ext_resource type="PackedScene" path="res://assets/props/ring_3.glb" id="p_ring_3"]
+[ext_resource type="PackedScene" path="res://assets/props/plate.glb" id="p_plate"]
+[ext_resource type="PackedScene" path="res://assets/props/pad.glb" id="p_pad"]
+[ext_resource type="PackedScene" path="res://assets/props/stone.glb" id="p_stone"]
+[ext_resource type="PackedScene" path="res://assets/props/door_lamp.glb" id="p_door_lamp"]
+[ext_resource type="PackedScene" path="res://assets/props/ancestor.glb" id="p_ancestor"]
+
+[sub_resource type="BoxShape3D" id="box_0"]
+size = Vector3(1.24, 1.24, 0.16)
+
+[sub_resource type="BoxShape3D" id="box_1"]
+size = Vector3(0.88, 0.88, 0.16)
+
+[sub_resource type="BoxShape3D" id="box_2"]
+size = Vector3(0.6, 0.6, 0.16)
+
+[sub_resource type="BoxShape3D" id="box_3"]
+size = Vector3(1.1, 0.9, 3.3)
+
+[sub_resource type="BoxShape3D" id="box_4"]
+size = Vector3(0.9, 1.2, 1)
+
+[sub_resource type="BoxShape3D" id="box_5"]
+size = Vector3(0.9, 1.2, 1)
+
+[sub_resource type="BoxShape3D" id="box_6"]
+size = Vector3(0.9, 1.2, 1)
+
+[sub_resource type="BoxShape3D" id="box_7"]
+size = Vector3(0.62, 0.62, 0.12)
+
+[sub_resource type="BoxShape3D" id="box_8"]
+size = Vector3(0.62, 0.62, 0.12)
+
+[sub_resource type="BoxShape3D" id="box_9"]
+size = Vector3(0.62, 0.62, 0.12)
+
+[sub_resource type="BoxShape3D" id="box_10"]
+size = Vector3(0.62, 0.62, 0.12)
+
+[sub_resource type="BoxShape3D" id="box_11"]
+size = Vector3(0.62, 0.62, 0.12)
+
+[sub_resource type="BoxShape3D" id="box_12"]
+size = Vector3(0.62, 0.62, 0.12)
+
+[sub_resource type="BoxShape3D" id="box_13"]
+size = Vector3(1.1, 1.1, 0.05)
+
+[sub_resource type="BoxShape3D" id="box_14"]
+size = Vector3(1.1, 1.1, 0.05)
+
+[sub_resource type="BoxShape3D" id="box_15"]
+size = Vector3(1.1, 1.1, 0.05)
+
+[sub_resource type="BoxShape3D" id="box_16"]
+size = Vector3(1.8, 2.7, 0.06)
+
+[sub_resource type="BoxShape3D" id="box_17"]
+size = Vector3(1.8, 2.7, 0.06)
+
+[sub_resource type="BoxShape3D" id="box_18"]
+size = Vector3(1.8, 2.7, 0.06)
+
+[sub_resource type="BoxShape3D" id="box_19"]
+size = Vector3(1.8, 2.7, 0.06)
+
+[sub_resource type="BoxShape3D" id="box_20"]
+size = Vector3(1.8, 2.7, 0.06)
+
+[node name="Exhibit" type="Node3D"]
+script = ExtResource("script")
+
+[node name="Eyes" type="Node3D" parent="."]
+
+[node name="eye_0" parent="Eyes" instance=ExtResource("p_eye_disc_0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 2, -8.92)
+
+[node name="body" type="StaticBody3D" parent="Eyes/eye_0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "eye"
+metadata/i = 0
+
+[node name="shape" type="CollisionShape3D" parent="Eyes/eye_0/body"]
+shape = SubResource("box_0")
+
+[node name="eye_1" parent="Eyes" instance=ExtResource("p_eye_disc_1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 2, -8.92)
+
+[node name="body" type="StaticBody3D" parent="Eyes/eye_1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "eye"
+metadata/i = 1
+
+[node name="shape" type="CollisionShape3D" parent="Eyes/eye_1/body"]
+shape = SubResource("box_1")
+
+[node name="eye_2" parent="Eyes" instance=ExtResource("p_eye_disc_2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.35, 2, -8.92)
+
+[node name="body" type="StaticBody3D" parent="Eyes/eye_2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "eye"
+metadata/i = 2
+
+[node name="shape" type="CollisionShape3D" parent="Eyes/eye_2/body"]
+shape = SubResource("box_2")
+
+[node name="Stack" type="Node3D" parent="."]
+
+[node name="plinth" parent="Stack" instance=ExtResource("p_plinth")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 0, -5)
+
+[node name="body" type="StaticBody3D" parent="Stack/plinth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+metadata/kind = "stack"
+metadata/peg = -1
+
+[node name="shape" type="CollisionShape3D" parent="Stack/plinth/body"]
+shape = SubResource("box_3")
+
+[node name="peg_0" parent="Stack" instance=ExtResource("p_peg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 0.9, -3.8)
+
+[node name="body" type="StaticBody3D" parent="Stack/peg_0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+metadata/kind = "stack"
+metadata/peg = 0
+
+[node name="shape" type="CollisionShape3D" parent="Stack/peg_0/body"]
+shape = SubResource("box_4")
+
+[node name="peg_1" parent="Stack" instance=ExtResource("p_peg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 0.9, -5)
+
+[node name="body" type="StaticBody3D" parent="Stack/peg_1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+metadata/kind = "stack"
+metadata/peg = 1
+
+[node name="shape" type="CollisionShape3D" parent="Stack/peg_1/body"]
+shape = SubResource("box_5")
+
+[node name="peg_2" parent="Stack" instance=ExtResource("p_peg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 0.9, -6.2)
+
+[node name="body" type="StaticBody3D" parent="Stack/peg_2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+metadata/kind = "stack"
+metadata/peg = 2
+
+[node name="shape" type="CollisionShape3D" parent="Stack/peg_2/body"]
+shape = SubResource("box_6")
+
+[node name="ring_0" parent="Stack" instance=ExtResource("p_ring_0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 1.51, -3.8)
+
+[node name="ring_1" parent="Stack" instance=ExtResource("p_ring_1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 1.34, -3.8)
+
+[node name="ring_2" parent="Stack" instance=ExtResource("p_ring_2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 1.17, -3.8)
+
+[node name="ring_3" parent="Stack" instance=ExtResource("p_ring_3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.3, 1, -3.8)
+
+[node name="glyph_0" parent="Stack" instance=ExtResource("p_plate")]
+transform = Transform3D(0, 0, 0.5, 0, 0.5, 0, -0.5, 0, 0, -12.37, 2.6, -6.2)
+metadata/art = "glyph_sun"
+
+[node name="glyph_1" parent="Stack" instance=ExtResource("p_plate")]
+transform = Transform3D(0, 0, 0.5, 0, 0.5, 0, -0.5, 0, 0, -12.37, 2.6, -5)
+metadata/art = "glyph_eye"
+
+[node name="Pads" type="Node3D" parent="."]
+
+[node name="pad_0" parent="Pads" instance=ExtResource("p_pad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.36, 2.05, -12.4)
+
+[node name="body" type="StaticBody3D" parent="Pads/pad_0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "pad"
+metadata/i = 0
+
+[node name="shape" type="CollisionShape3D" parent="Pads/pad_0/body"]
+shape = SubResource("box_7")
+
+[node name="pad_1" parent="Pads" instance=ExtResource("p_pad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.36, 2.05, -13.4)
+
+[node name="body" type="StaticBody3D" parent="Pads/pad_1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "pad"
+metadata/i = 1
+
+[node name="shape" type="CollisionShape3D" parent="Pads/pad_1/body"]
+shape = SubResource("box_8")
+
+[node name="pad_2" parent="Pads" instance=ExtResource("p_pad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.36, 2.05, -14.4)
+
+[node name="body" type="StaticBody3D" parent="Pads/pad_2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "pad"
+metadata/i = 2
+
+[node name="shape" type="CollisionShape3D" parent="Pads/pad_2/body"]
+shape = SubResource("box_9")
+
+[node name="pad_3" parent="Pads" instance=ExtResource("p_pad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.36, 1.25, -12.4)
+
+[node name="body" type="StaticBody3D" parent="Pads/pad_3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "pad"
+metadata/i = 3
+
+[node name="shape" type="CollisionShape3D" parent="Pads/pad_3/body"]
+shape = SubResource("box_10")
+
+[node name="pad_4" parent="Pads" instance=ExtResource("p_pad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.36, 1.25, -13.4)
+
+[node name="body" type="StaticBody3D" parent="Pads/pad_4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "pad"
+metadata/i = 4
+
+[node name="shape" type="CollisionShape3D" parent="Pads/pad_4/body"]
+shape = SubResource("box_11")
+
+[node name="pad_5" parent="Pads" instance=ExtResource("p_pad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.36, 1.25, -14.4)
+
+[node name="body" type="StaticBody3D" parent="Pads/pad_5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "pad"
+metadata/i = 5
+
+[node name="shape" type="CollisionShape3D" parent="Pads/pad_5/body"]
+shape = SubResource("box_12")
+
+[node name="Stones" type="Node3D" parent="."]
+
+[node name="stone_0" parent="Stones" instance=ExtResource("p_stone")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 3.975, 2.1, -15)
+
+[node name="body" type="StaticBody3D" parent="Stones/stone_0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "stone"
+metadata/i = 0
+
+[node name="shape" type="CollisionShape3D" parent="Stones/stone_0/body"]
+shape = SubResource("box_13")
+
+[node name="diagram_0" type="Node3D" parent="Stones"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 3.975, 2.1, -15)
+
+[node name="eye_0" parent="Stones/diagram_0" instance=ExtResource("p_eye_disc_0")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, -0.275, 0.088, 0.04)
+
+[node name="numeral_0" parent="Stones/diagram_0" instance=ExtResource("p_plate")]
+transform = Transform3D(0.132, 0, 0, 0, 0.132, 0, 0, 0, 0.132, -0.275, -0.22, 0.03)
+
+[node name="eye_1" parent="Stones/diagram_0" instance=ExtResource("p_eye_disc_1")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0.088, 0.04)
+
+[node name="numeral_1" parent="Stones/diagram_0" instance=ExtResource("p_plate")]
+transform = Transform3D(0.132, 0, 0, 0, 0.132, 0, 0, 0, 0.132, 0, -0.22, 0.03)
+
+[node name="eye_2" parent="Stones/diagram_0" instance=ExtResource("p_eye_disc_2")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0.275, 0.088, 0.04)
+
+[node name="numeral_2" parent="Stones/diagram_0" instance=ExtResource("p_plate")]
+transform = Transform3D(0.132, 0, 0, 0, 0.132, 0, 0, 0, 0.132, 0.275, -0.22, 0.03)
+
+[node name="stone_1" parent="Stones" instance=ExtResource("p_stone")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 3.975, 2.1, -13.4)
+
+[node name="body" type="StaticBody3D" parent="Stones/stone_1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "stone"
+metadata/i = 1
+
+[node name="shape" type="CollisionShape3D" parent="Stones/stone_1/body"]
+shape = SubResource("box_14")
+
+[node name="diagram_1" type="Node3D" parent="Stones"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 3.975, 2.1, -13.4)
+
+[node name="peg_0" parent="Stones/diagram_1" instance=ExtResource("p_peg")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -0.242, -0.242, 0.03)
+
+[node name="peg_1" parent="Stones/diagram_1" instance=ExtResource("p_peg")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, -0.242, 0.03)
+
+[node name="peg_2" parent="Stones/diagram_1" instance=ExtResource("p_peg")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0.242, -0.242, 0.03)
+
+[node name="ring_0" parent="Stones/diagram_1" instance=ExtResource("p_ring_0")]
+transform = Transform3D(0.14, 0, 0, 0, 0.047883, -0.131557, 0, 0.131557, 0.047883, 0, -0.242, 0.06)
+
+[node name="ring_1" parent="Stones/diagram_1" instance=ExtResource("p_ring_1")]
+transform = Transform3D(0.14, 0, 0, 0, 0.047883, -0.131557, 0, 0.131557, 0.047883, 0, -0.242, 0.06)
+
+[node name="ring_2" parent="Stones/diagram_1" instance=ExtResource("p_ring_2")]
+transform = Transform3D(0.14, 0, 0, 0, 0.047883, -0.131557, 0, 0.131557, 0.047883, 0, -0.242, 0.06)
+
+[node name="ring_3" parent="Stones/diagram_1" instance=ExtResource("p_ring_3")]
+transform = Transform3D(0.14, 0, 0, 0, 0.047883, -0.131557, 0, 0.131557, 0.047883, 0, -0.242, 0.06)
+
+[node name="word" parent="Stones/diagram_1" instance=ExtResource("p_plate")]
+transform = Transform3D(0.176, 0, 0, 0, 0.176, 0, 0, 0, 0.176, 0, 0.308, 0.03)
+metadata/art = "word_2"
+
+[node name="stone_2" parent="Stones" instance=ExtResource("p_stone")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 3.975, 2.1, -11.8)
+
+[node name="body" type="StaticBody3D" parent="Stones/stone_2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+metadata/kind = "stone"
+metadata/i = 2
+
+[node name="shape" type="CollisionShape3D" parent="Stones/stone_2/body"]
+shape = SubResource("box_15")
+
+[node name="diagram_2" type="Node3D" parent="Stones"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 3.975, 2.1, -11.8)
+
+[node name="word_0" parent="Stones/diagram_2" instance=ExtResource("p_plate")]
+transform = Transform3D(0.22, 0, 0, 0, 0.22, 0, 0, 0, 0.22, 0.132, 0.176, 0.03)
+
+[node name="word_1" parent="Stones/diagram_2" instance=ExtResource("p_plate")]
+transform = Transform3D(0.22, 0, 0, 0, 0.22, 0, 0, 0, 0.22, 0.132, -0.176, 0.03)
+
+[node name="word_2" parent="Stones/diagram_2" instance=ExtResource("p_plate")]
+transform = Transform3D(0.22, 0, 0, 0, 0.22, 0, 0, 0, 0.22, -0.198, 0.176, 0.03)
+
+[node name="word_3" parent="Stones/diagram_2" instance=ExtResource("p_plate")]
+transform = Transform3D(0.22, 0, 0, 0, 0.22, 0, 0, 0, 0.22, -0.198, -0.176, 0.03)
+
+[node name="Doors" type="Node3D" parent="."]
+
+[node name="pane_0" type="StaticBody3D" parent="Doors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, -0.8)
+metadata/kind = "doorway"
+metadata/i = 0
+
+[node name="shape" type="CollisionShape3D" parent="Doors/pane_0"]
+shape = SubResource("box_16")
+
+[node name="lamp_0_0" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.86, -0.59)
+
+[node name="lamp_0_1" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2.86, -1.01)
+
+[node name="pane_1" type="StaticBody3D" parent="Doors"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -4.2, 1.35, -5)
+metadata/kind = "doorway"
+metadata/i = 1
+
+[node name="shape" type="CollisionShape3D" parent="Doors/pane_1"]
+shape = SubResource("box_17")
+
+[node name="lamp_1_0" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -3.99, 2.86, -5)
+
+[node name="lamp_1_1" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -4.41, 2.86, -5)
+
+[node name="pane_2" type="StaticBody3D" parent="Doors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.4, 1.35, -9.2)
+metadata/kind = "doorway"
+metadata/i = 2
+
+[node name="shape" type="CollisionShape3D" parent="Doors/pane_2"]
+shape = SubResource("box_18")
+
+[node name="lamp_2_0" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.4, 2.86, -8.99)
+
+[node name="lamp_2_1" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -8.4, 2.86, -9.41)
+
+[node name="pane_3" type="StaticBody3D" parent="Doors"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -4.2, 1.35, -13.4)
+metadata/kind = "doorway"
+metadata/i = 3
+
+[node name="shape" type="CollisionShape3D" parent="Doors/pane_3"]
+shape = SubResource("box_19")
+
+[node name="lamp_3_0" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -3.99, 2.86, -13.4)
+
+[node name="lamp_3_1" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -4.41, 2.86, -13.4)
+
+[node name="pane_4" type="StaticBody3D" parent="Doors"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, -17.6)
+metadata/kind = "doorway"
+metadata/i = 4
+
+[node name="shape" type="CollisionShape3D" parent="Doors/pane_4"]
+shape = SubResource("box_20")
+
+[node name="lamp_4_0" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.86, -17.39)
+
+[node name="lamp_4_1" parent="Doors" instance=ExtResource("p_door_lamp")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2.86, -17.81)
+
+[node name="Ancestor" parent="." instance=ExtResource("p_ancestor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -19.8)

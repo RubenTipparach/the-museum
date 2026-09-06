@@ -5,17 +5,10 @@
 (function () {
   'use strict';
 
-  // ---- tuning: the numbers the game will hold in data/tuning.json --------------
-  var T = {
-    fov: 62, near: 0.05, far: 60,
-    easeK: 5.5,               // camera ease, 1 - exp(-k dt)
-    orbitSens: 0.0052, pitchMin: -0.35, pitchMax: 0.62,
-    distMin: 2.0, distMax: 3.4,
-    inspectNudge: 0.22,       // radians of drag allowed at an anchor
-    tapMs: 450, tapPx: 9,
-    wallH: 4, wallT: 0.4, doorW: 1.8, doorH: 2.7,
-    ringHover: 2.05
-  };
+  // ---- tuning: data/tuning.json, the table the Godot build reads too --------------
+  var T = window.TUNING;
+  T.wallH = window.LAYOUT.wallHeight; T.wallT = window.LAYOUT.wallThickness;
+  T.doorW = window.LAYOUT.door.w; T.doorH = window.LAYOUT.door.h;
 
   var P = window.Puzzles, A = window.Art, L = window.LORE;
   var V3 = function (x, y, z) { return new THREE.Vector3(x, y, z); };
@@ -46,6 +39,11 @@
   // coloured wash on the jamb is what makes the state read from across it.
   var doorLights = [new THREE.PointLight(0x000000, 0, 1.9, 2), new THREE.PointLight(0x000000, 0, 1.9, 2)];
   doorLights.forEach(function (l) { scene.add(l); });
+  // And a track head over the door that leads on, because a small lamp is not
+  // enough to find on a dim phone: the way out of a room should be the
+  // brightest thing in it.
+  var wayLight = new THREE.SpotLight(0xcaffd8, 0, 9, 0.62, 0.55, 1.3);
+  scene.add(wayLight); scene.add(wayLight.target);
   var LAY = window.LAYOUT, TEX = window.TEXTURES;
 
   // ---- textures and materials ------------------------------------------------------
@@ -61,18 +59,24 @@
   }
   var plaqueMats = {};
   var roleMats = {};
+  // The role table both builds bind from: data/materials.json. TEX holds the
+  // maps it names, as data URIs; the colours, emission and alpha are read
+  // here rather than kept in a second table.
+  var MAT = window.MATERIALS.roles;
   function roleMat(name) {
     if (roleMats[name]) return roleMats[name];
-    var t = TEX[name] || {}, m = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: name.indexOf('metal') >= 0 ? 0.6 : 0.0 });
+    var def = MAT[name] || {}, src = def.from || name, t = TEX[src] || {};
+    var m = new THREE.MeshStandardMaterial({ roughness: def.roughness !== undefined ? def.roughness : 0.9, metalness: def.metallic || 0 });
     // flipY off: these go on the shell, whose glTF UVs are already flipped.
     function load(uri, srgb) { var im = new Image(); var tx = new THREE.Texture(im); tx.flipY = false; im.onload = function () { tx.needsUpdate = true; }; im.src = uri; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; if (srgb) tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; return tx; }
-    if (t.albedo) m.map = load(t.albedo, true); else m.color.setHex({ mat_void_black: 0x030303, mat_lamp: 0xfff2d0, mat_plaque: 0x8c8470, mat_sign_hall: 0x8c8470, mat_belt: 0x6a1418, mat_extinguisher: 0xb01008 }[name] || 0x777777);
+    if (t.albedo) m.map = load(t.albedo, true); else m.color.setHex(0x777777);
     if (t.normal) { m.normalMap = load(t.normal, false); m.normalScale.set(0.8, 0.8); }
     if (t.rough) m.roughnessMap = load(t.rough, false);
-    if (name === 'mat_leaf') { m.transparent = false; m.alphaTest = 0.5; m.side = THREE.DoubleSide; }
-    if (name === 'mat_lamp') { m.emissive.setHex(0xffe0a0); m.emissiveIntensity = 2.5; }
-    if (name === 'mat_sign_exit') { m.emissive.setHex(0x20c050); m.emissiveIntensity = 0.7; if (m.map) m.emissiveMap = m.map; }
-    if (name === 'mat_extinguisher') { m.color.setHex(0xb01008); m.roughness = 0.45; }
+    if (def.color) m.color.set(def.color);
+    if (def.tint) m.color.set(def.tint);
+    if (def.emission) { m.emissive.set(def.emission); m.emissiveIntensity = def.emissionEnergy || 1; if (def.emissionFromAlbedo && m.map) m.emissiveMap = m.map; }
+    if (def.alphaScissor) { m.transparent = false; m.alphaTest = def.alphaScissor; }
+    if (def.doubleSided) m.side = THREE.DoubleSide;
     roleMats[name] = m; return m;
   }
 
@@ -80,25 +84,59 @@
   var solids = [];    // what a tap ray can stop on
   var shellByName = {};
   var plaqueMeshes = {};
-  (function loadShell() {
-    var bytes = Uint8Array.from(atob(window.SHELL_GLB), function (c) { return c.charCodeAt(0); });
-    var loader = new window.GLTFLoaderModule.GLTFLoader();
-    loader.parse(bytes.buffer, '', function (gltf) {
-      gltf.scene.traverse(function (o) {
-        if (!o.isMesh) return;
-        var role = o.material && o.material.name;
-        o.material = roleMat(role || 'mat_stone_paving');
-        shellByName[o.name] = o;
-        if (/^door_\d+_slab$/.test(o.name)) { var i = +o.name.split('_')[1]; DOORS[i].mesh = o; DOORS[i].closedY = o.position.y; DOORS[i].openY = o.position.y - T.doorH - 0.1; mark(o, { kind: 'door', i: i }); }
-        else if (o.name.indexOf('plaque_') === 0) { plaqueMeshes[o.name.slice(7)] = o; }
-        else if (o.name === 'sign_hall') { o.material = signMat; }
-        else if (o.name.indexOf('vines_') < 0) solids.push(o);
-      });
-      scene.add(gltf.scene);
-      DOORS.forEach(function (d, i) { if (d.mesh && X.open[i]) d.mesh.position.y = d.openY; });
-      Object.keys(plaqueMeshes).forEach(function (id) { var m = plaqueMeshes[id]; m.material = plaqueMat(id); mark(m, { kind: 'plaque', id: id, normal: plaqueNormal(id) }); });
-    }, function (err) { console.error('shell failed to load', err); });
-  })();
+  // Called once the door table and the room list exist, further down: the
+  // glTF load this replaced was asynchronous, so it happened to run after
+  // them. A synchronous build has to be placed rather than trusted to luck.
+  function buildShell() {
+    // The shell arrives as quantized integers rather than a binary model
+    // (tools/glb_to_json.py says why). Positions decode against one box for
+    // the whole museum, texture coordinates against each part's own, and the
+    // normals are computed here: the exporter splits vertices at every hard
+    // edge, so computing them gives back the faceting it authored.
+    var S = window.SHELL, pb = S.pb, root = new THREE.Group();
+    S.parts.forEach(function (part) {
+      var geo = new THREE.BufferGeometry();
+      var p = part.p, pos = new Float32Array(p.length);
+      for (var i = 0; i < p.length; i += 3) {
+        pos[i] = pb[0] + p[i] / 65535 * pb[3];
+        pos[i + 1] = pb[1] + p[i + 1] / 65535 * pb[4];
+        pos[i + 2] = pb[2] + p[i + 2] / 65535 * pb[5];
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      if (part.t) {
+        var t = part.t, ub = part.ub, uv = new Float32Array(t.length);
+        for (var j = 0; j < t.length; j += 2) {
+          uv[j] = ub[0] + t[j] / 65535 * ub[2];
+          uv[j + 1] = ub[1] + t[j + 1] / 65535 * ub[3];
+        }
+        geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      }
+      geo.setIndex(part.i);
+      geo.computeVertexNormals();
+      var o = new THREE.Mesh(geo, roleMat(part.m || 'mat_stone_paving'));
+      // A mesh split across two materials exports as two parts; they share a
+      // name and the second carries a #1, so match on the name itself.
+      var name = part.n.split('#')[0];
+      o.name = name;
+      root.add(o);
+      shellByName[name] = o;
+      var door = /^door_(\d+)_slab$/.exec(name);
+      if (door) {
+        var i2 = +door[1];
+        DOORS[i2].mesh = o; DOORS[i2].closedY = 0; DOORS[i2].openY = -T.doorH - 0.1;
+        mark(o, { kind: 'door', i: i2 });
+      } else if (name.indexOf('plaque_') === 0) { plaqueMeshes[name.slice(7)] = o; }
+      else if (name === 'sign_hall') { o.material = signMat; }
+      else if (name.indexOf('vines_') < 0) solids.push(o);
+    });
+    scene.add(root);
+    DOORS.forEach(function (d, i) { if (d.mesh && X.open[i]) d.mesh.position.y = d.openY; });
+    Object.keys(plaqueMeshes).forEach(function (id) {
+      var m = plaqueMeshes[id];
+      m.material = plaqueMat(id);
+      mark(m, { kind: 'plaque', id: id, normal: plaqueNormal(id) });
+    });
+  }
   var signTex = tex(A.sign(512, 200, [L.hall, 'The Elmorians'])); signTex.flipY = false; signTex.needsUpdate = true;
   var signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.8 });
   var cache = {};
@@ -116,14 +154,10 @@
   function plaqueDef(id) { return LAY.plaques.filter(function (q) { return q.id === id; })[0]; }
 
   // ---- the rooms and the camera's places in them ---------------------------------------------
-  var ROOMS = [
-    { center: V3(0, 1.8, -0.4), yaw: 0, pitch: 0.02, dist: 4.4, lamps: [[0, 3.4, 3.2], [0, 2.6, 1.2]], spot: [[0, 4.6, 3.6], [0, 2.2, -0.4]] },
-    { center: V3(0, 1.5, -4.8), yaw: 0, pitch: 0.05, dist: 3.0, lamps: [[0, 3.6, -5], [0, 3.0, -8]], spot: [[0, 3.8, -6.3], [0, 2.0, -9.0]] },
-    { center: V3(-8.0, 1.5, -5), yaw: PI / 2, pitch: 0.05, dist: 3.0, lamps: [[-8.4, 3.6, -5], [-10.6, 3.0, -5]], spot: [[-9.4, 3.8, -5], [-11.3, 1.0, -5]] },
-    { center: V3(-8.0, 1.5, -13.4), yaw: PI / 2, pitch: 0.05, dist: 3.0, lamps: [[-8.4, 3.6, -13.4], [-10.6, 3.0, -13.4]], spot: [[-9.4, 3.8, -13.4], [-12.4, 1.6, -13.4]] },
-    { center: V3(0, 1.5, -13.4), yaw: -PI / 2, pitch: 0.05, dist: 3.0, lamps: [[0, 3.6, -13.4], [2.2, 3.0, -13.4]], spot: [[1.4, 3.8, -13.4], [4.0, 2.0, -13.4]] },
-    { center: V3(0, 1.3, -19.9), yaw: 0, pitch: 0.08, dist: 2.0, lamps: [[0, 3.5, -19.8], [0, 3.2, -18.4]], spot: [[0, 3.9, -18.6], [0, 1.4, -19.8]] }
-  ];
+  // Where the camera stands in each room: data/layout/elmorian.json views.
+  var ROOMS = LAY.views.rooms.map(function (v) {
+    return { center: V3(v.center[0], v.center[1], v.center[2]), yaw: v.yaw, pitch: v.pitch, dist: v.dist, lamp: v.lamp };
+  });
   var DOORS = LAY.doors.map(function (d) { return { pos: V3(d.at[0], 0, d.at[1]), axis: d.axis, rooms: d.rooms, slab: d.slab }; });
 
   var interact = [];   // everything a tap may land on
@@ -160,10 +194,10 @@
   // Green means this door has opened and leads deeper; red means it goes back
   // the way you came; dark means it is still shut. One disc on each side of the
   // opening, because a door is a fact in both rooms.
-  var LAMP = { green: 0x2fe06a, red: 0xe0392f, off: 0x1a1c18 };
+  var LAMP = window.MATERIALS.doorLamps;
   var lampMats = {};
   function lampMat(kind) {
-    if (!lampMats[kind]) lampMats[kind] = new THREE.MeshStandardMaterial({ color: 0x101210, emissive: LAMP[kind], emissiveIntensity: kind === 'off' ? 0.04 : 0.75, roughness: 0.4 });
+    if (!lampMats[kind]) lampMats[kind] = new THREE.MeshStandardMaterial({ color: 0x101210, emissive: new THREE.Color(LAMP[kind]), emissiveIntensity: kind === 'off' ? LAMP.offEnergy : LAMP.onEnergy, roughness: 0.4 });
     return lampMats[kind];
   }
   DOORS.forEach(function (d) {
@@ -185,14 +219,41 @@
       d.lamps.forEach(function (m) { m.material = lampMat(kind); });
       if (kind !== 'off' && lit.length < doorLights.length) lit.push([d, kind]);
     });
+    function sideOf(d) {
+      var out = d.axis === 'x' ? V3(0, 0, 1) : V3(1, 0, 0);
+      var toward = ROOMS[rig.room].center.clone().sub(d.pos); toward.y = 0;
+      return out.multiplyScalar(toward.dot(out) >= 0 ? 1 : -1);
+    }
     doorLights.forEach(function (l, k) {
       if (!lit[k]) { l.intensity = 0; return; }
-      var d = lit[k][0], out = d.axis === 'x' ? V3(0, 0, 1) : V3(1, 0, 0);
-      var toward = ROOMS[rig.room].center.clone().sub(d.pos); toward.y = 0;
-      var sgn = toward.dot(out) >= 0 ? 1 : -1;
-      l.position.set(d.pos.x + out.x * sgn * 0.45, T.doorH + 0.05, d.pos.z + out.z * sgn * 0.45);
-      l.color.setHex(LAMP[lit[k][1]]); l.intensity = 0.85;
+      var d = lit[k][0], out = sideOf(d);
+      l.position.set(d.pos.x + out.x * 0.45, T.doorH + 0.05, d.pos.z + out.z * 0.45);
+      l.color.set(LAMP[lit[k][1]]); l.intensity = 0.85;
     });
+    // the way on, if there is one open from here
+    var way = null;
+    DOORS.forEach(function (d, i) { if (d.rooms[0] === rig.room && X.open[i]) way = d; });
+    if (!way) { wayLight.intensity = 0; }
+    else {
+      var out = sideOf(way);
+      wayLight.position.set(way.pos.x + out.x * 1.15, LAY.fixtures.truss.y - 0.4, way.pos.z + out.z * 1.15);
+      wayLight.target.position.set(way.pos.x + out.x * 0.12, 1.35, way.pos.z + out.z * 0.12);
+      wayLight.intensity = 34;
+    }
+  }
+
+  // Where a mesh actually is. The shell's meshes carry their world position
+  // in their vertices (the text payload bakes each part's transform in), so
+  // a shell mesh's own position is the origin and reading it points at the
+  // middle of the museum. Anything that needs a location asks the geometry.
+  function centreOf(m) {
+    var v = new THREE.Vector3();
+    if (m.geometry) {
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      m.geometry.boundingBox.getCenter(v);
+      m.localToWorld(v);
+    } else { m.getWorldPosition(v); }
+    return v;
   }
 
   function box(w, h, d, mat, x, y, z, ry) {
@@ -300,13 +361,12 @@
   function setGoal(target, yaw, pitch, dist) { rig.goal.target.copy(target); rig.goal.yaw = nearAngle(yaw, rig.yaw); rig.goal.pitch = pitch; rig.goal.dist = dist; }
   function placeLights(r) {
     var R = ROOMS[r];
-    lampA.position.set(R.lamps[0][0], R.lamps[0][1], R.lamps[0][2]);
+    lampA.position.set(R.lamp[0], R.lamp[1], R.lamp[2]);
     // every plaque in this room, then its station: the track heads the shell carries
     var so = LAY.fixtures.lighting.standoff, y = LAY.fixtures.truss.y - 0.4;
     var aims = LAY.plaques.filter(function (p) { return roomOf(p.pos) === r; }).map(function (p) { return [p.pos, p.normal, 26, 0.52]; });
     Object.keys(LAY.stations).forEach(function (k) { var st = LAY.stations[k]; if (st.room === r) aims.push([st.point, st.normal, 70, 0.8]); });
-    if (r === 0) aims.push([[0, 3.25, -0.6], [0, 0, 1], 30, 0.5], [[0, 1.6, -0.6], [0, 0, 1], 24, 0.7]);
-    if (r === 5) aims.push([[0, 1.4, -19.9], [0, 0.6, 1], 50, 0.7]);
+    (LAY.views.extraSpots[String(r)] || []).forEach(function (a) { aims.push(a); });
     spots.forEach(function (sp, i) {
       var a = aims[i];
       if (!a) { sp.intensity = 0; return; }
@@ -318,7 +378,7 @@
   function roomOf(p) { for (var i = 0; i < LAY.rooms.length; i++) { var b = LAY.rooms[i].bounds; if (p[0] >= b[0] && p[0] <= b[2] && p[2] >= b[1] && p[2] <= b[3]) return LAY.rooms[i].id; } return -1; }
   function goRoom(r, instant) {
     var R = ROOMS[r], from = rig.room;
-    rig.mode = 'room'; rig.station = null; rig.room = r; hideCard(); backBtn.hidden = true;
+    rig.mode = 'room'; rig.station = null; rig.room = r; lastCard = null; hideCard(); backBtn.hidden = true; readBtn.hidden = true; document.body.classList.remove('inspecting');
     // Through the doorway first, then to the room's own place, so the camera
     // never cuts through a wall on the way.
     var door = DOORS.filter(function (d) { return (d.rooms[0] === from && d.rooms[1] === r) || (d.rooms[1] === from && d.rooms[0] === r); })[0];
@@ -341,9 +401,21 @@
     var yaw = Math.atan2(off.x, off.z), pitch = Math.asin(Math.max(-1, Math.min(1, off.y)));
     rig.anchorYaw = nearAngle(yaw, rig.yaw); rig.anchorPitch = pitch;
     setGoal(point, yaw, pitch, dist);
-    backBtn.hidden = false;
+    backBtn.hidden = false; document.body.classList.add('inspecting');
+    if (!card.hidden) readBtn.hidden = true; else readBtn.hidden = !lastCard;
   }
-  function leaveInspect() { var R = ROOMS[rig.room]; rig.mode = 'room'; rig.station = null; rig.queue = []; setGoal(R.center, R.yaw, R.pitch, roomDist(R)); hideCard(); backBtn.hidden = true; }
+  // Back steps away from the object, it does not turn away from the wall. The
+  // yaw is kept exactly as it is, so pulling out of a plaque leaves the whole
+  // wall in front of you and its neighbours either side; only the pitch comes
+  // back to the room's, because an anchor may have been looking up or down at
+  // something and a room view should be level.
+  function leaveInspect() {
+    var R = ROOMS[rig.room];
+    rig.mode = 'room'; rig.station = null; rig.queue = [];
+    setGoal(R.center, rig.goal.yaw, R.pitch, roomDist(R));
+    lastCard = null; hideCard(); backBtn.hidden = true; readBtn.hidden = true;
+    document.body.classList.remove('inspecting');
+  }
   // The distance that fits a w by h extent in the current view, capped so the
   // camera stays inside the room.
   function fitDist(w, h, cap) {
@@ -351,12 +423,12 @@
     var d = Math.max(w * 0.5 / Math.tan(hf), h * 0.5 / Math.tan(vf)) * 1.12 + 0.3;
     return Math.min(cap, Math.max(1.2, d));
   }
-  var STATIONS = {
-    gaze: { point: V3(0, 2.0, -9.0), normal: V3(0, 0, 1), w: 3.7, h: 1.6, cap: 6.6, room: 1 },
-    stack: { point: V3(-11.3, 1.15, -5), normal: V3(1, 0.32, 0), w: 3.4, h: 1.7, cap: 6.4, room: 2 },
-    speech: { point: V3(-12.4, 1.65, -13.4), normal: V3(1, 0, 0), w: 2.9, h: 1.7, cap: 6.4, room: 3 },
-    final: { point: V3(4.0, 2.0, -13.4), normal: V3(-1, 0, 0), w: 4.4, h: 1.5, cap: 6.8, room: 4 }
-  };
+  // The puzzle walls: data/layout/elmorian.json stations, caps included.
+  var STATIONS = {};
+  Object.keys(LAY.stations).forEach(function (k) {
+    if (k === '_') return; var st = LAY.stations[k];
+    STATIONS[k] = { point: V3(st.point[0], st.point[1], st.point[2]), normal: V3(st.normal[0], st.normal[1], st.normal[2]), w: st.w, h: st.h, cap: st.cap, room: st.room };
+  });
   function goStation(name) { var s = STATIONS[name]; inspect(s.point, s.normal, fitDist(s.w, s.h, s.cap), name); }
   function roomDist(R) { return camera.aspect < 1 ? R.dist + 0.3 : R.dist; }
 
@@ -366,7 +438,9 @@
     canvasEl.setPointerCapture(e.pointerId);
     pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
     var n = Object.keys(pointers).length;
-    if (n === 1) drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false };
+    // The event's own time, not the time it was handled: on a slow frame the
+    // release is handled long after the finger lifted.
+    if (n === 1) drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: e.timeStamp, moved: false };
     if (n === 2) { var ps = Object.values(pointers); pinchD = Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y); drag = null; }
     audio.wake();
   });
@@ -392,7 +466,7 @@
   });
   function endPointer(e) {
     var was = pointers[e.pointerId]; delete pointers[e.pointerId];
-    if (drag && was && !drag.moved && performance.now() - drag.t < T.tapMs) tap(e.clientX, e.clientY);
+    if (drag && was && !drag.moved && e.timeStamp - drag.t < T.tapMs) tap(e.clientX, e.clientY);
     if (!Object.keys(pointers).length) { drag = null; pinchD = 0; }
   }
   canvasEl.addEventListener('pointerup', endPointer); canvasEl.addEventListener('pointercancel', endPointer);
@@ -416,7 +490,7 @@
         if (!X.open[u.i]) { showCard(L.doors[u.i].title, L.doors[u.i].text); shake(d.mesh); audio.thud(); return; }
         var to = d.rooms[0] === rig.room ? d.rooms[1] : d.rooms[0]; goRoom(to); audio.step(); break;
       }
-      case 'plaque': showCard(L.plaques[u.id].title, L.plaques[u.id].text); inspect(h.object.position, u.normal, fitDist(1.5, 1.1, 4), 'plaque'); audio.click(); break;
+      case 'plaque': showCard(L.plaques[u.id].title, L.plaques[u.id].text); inspect(centreOf(h.object), u.normal, fitDist(1.5, 1.1, 4), 'plaque'); audio.click(); break;
       case 'stone': showCard('Seeing stone', 'It shows a room behind you as that room stands now.'); goStation('final'); audio.click(); break;
       case 'eye':
         if (rig.station !== 'gaze') { goStation('gaze'); audio.click(); break; }
@@ -462,10 +536,19 @@
 
   // ---- HUD ------------------------------------------------------------------------------------------
   var card = document.getElementById('card'), cardTitle = document.getElementById('cardTitle'), cardText = document.getElementById('cardText');
-  var backBtn = document.getElementById('back'), hint = document.getElementById('hint'), chips = document.getElementById('chips'), toastEl = document.getElementById('toast');
-  function showCard(title, text) { cardTitle.textContent = title; cardText.innerHTML = text.split('\n\n').map(function (p) { return '<p>' + p + '</p>'; }).join(''); cardText.scrollTop = 0; card.hidden = false; }
-  function hideCard() { card.hidden = true; }
-  document.getElementById('cardClose').addEventListener('click', function () { hideCard(); if (rig.station === 'plaque') leaveInspect(); });
+  var backBtn = document.getElementById('back'), readBtn = document.getElementById('read'), hint = document.getElementById('hint'), chips = document.getElementById('chips'), toastEl = document.getElementById('toast');
+  // Closing the label is not leaving the object: the camera stays where it is
+  // so the thing can be looked at, and Read brings the label back. Back is
+  // the only way out, and it is next to it.
+  var lastCard = null;
+  function showCard(title, text) {
+    lastCard = { title: title, text: text };
+    cardTitle.textContent = title; cardText.innerHTML = text.split('\n\n').map(function (p) { return '<p>' + p + '</p>'; }).join('');
+    cardText.scrollTop = 0; card.hidden = false; readBtn.hidden = true;
+  }
+  function hideCard() { card.hidden = true; readBtn.hidden = !(lastCard && rig.mode === 'inspect'); }
+  document.getElementById('cardClose').addEventListener('click', hideCard);
+  readBtn.addEventListener('click', function () { if (lastCard) showCard(lastCard.title, lastCard.text); });
   backBtn.addEventListener('click', leaveInspect);
   var toastT = 0; function toast(s) { toastEl.textContent = s; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('on'); }, 2200); }
   function chip(i) {
@@ -476,7 +559,13 @@
     chips.appendChild(b); return b;
   }
   var chipEls = [0, 1, 2, 3, 4, 5].map(chip);
-  function canReach(i) { for (var k = 1; k <= i && k <= 4; k++) if (!X.open[k]) return false; return true; }
+  // Fast travel offers every room already reached, the newest one included.
+  // Reaching room i needs the doors BEHIND it open, 0 to i - 1; it does not
+  // need the door out of it, which is that room's own puzzle. Asking for
+  // 1..i meant the room you had just unlocked stayed greyed out until you
+  // had solved it, so the one room a player wants to jump back to was the
+  // one room the row would not offer.
+  function canReach(i) { for (var k = 1; k < i && k <= 4; k++) if (!X.open[k]) return false; return true; }
   function updateHud() {
     document.getElementById('roomSub').textContent = L.rooms[rig.room].sub; document.getElementById('roomName').textContent = L.rooms[rig.room].name;
     chipEls.forEach(function (b, i) { b.classList.toggle('here', i === rig.room); b.classList.toggle('locked', !canReach(i)); });
@@ -552,6 +641,7 @@
     requestAnimationFrame(frame);
   }
 
+  buildShell();
   if (!load()) goRoom(0, true);
   requestAnimationFrame(frame);
 
@@ -559,7 +649,7 @@
   function screenOf(kind, i) {
     var m = interact.filter(function (o) { return o.userData.kind === kind && (i === undefined || o.userData.i === i || o.userData.peg === i || o.userData.id === i); })[0];
     if (!m) return null;
-    var v = new THREE.Vector3(); m.getWorldPosition(v); v.project(camera);
+    var v = centreOf(m); v.project(camera);
     return { x: (v.x + 1) / 2 * window.innerWidth, y: (1 - v.y) / 2 * window.innerHeight, z: v.z };
   }
   // What a tap at (x, y) would land on, nearest first: names, kinds, distances.

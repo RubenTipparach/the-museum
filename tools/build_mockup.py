@@ -16,20 +16,6 @@ import sys
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 
 
-def module_to_script(src, exports_to):
-    """An ES module from three's examples as a plain script: its imports from
-    'three' read the global, its import of BufferGeometryUtils reads the
-    global that file was turned into, and its exports land on `exports_to`."""
-    src = re.sub(r"import\s*\{([^}]*)\}\s*from\s*'three';", lambda m: "const {%s} = THREE;" % m.group(1), src)
-    src = re.sub(r"import\s*\{([^}]*)\}\s*from\s*'\.\./utils/BufferGeometryUtils\.js';", lambda m: "const {%s} = window.BufferGeometryUtils;" % m.group(1), src)
-    src = re.sub(r"^export function ", "function ", src, flags=re.M)
-    src = re.sub(r"export\s*\{([^}]*)\};", lambda m: "window.%s = {%s};" % (exports_to, m.group(1)), src)
-    assert "import " not in src and "export " not in src, "a module boundary survived the transform"
-    # Its own scope: two scripts declaring the same names from THREE at top
-    # level share one global lexical scope and the second one throws.
-    return "(function () {\n'use strict';\n" + src + "\n})();"
-
-
 def textures_json(d):
     """The generated texture set, downscaled to 512 and JPEG encoded as data
     URIs, keyed by role and map. A build product of the PNGs; the PNGs are
@@ -66,18 +52,26 @@ def build(slug):
     for key, path in parts.items():
         with open(path) as f:
             src = f.read()
+        if key == "LORE":
+            with open(os.path.join(ROOT, "data", "lore", "elmorian.json")) as lf:
+                src = src.replace("{{LORE_JSON}}", json.dumps(json.load(lf)))
         # A closing script tag inside a script would end the block early.
         src = src.replace("</script>", "<\\/script>")
         page = page.replace("{{%s}}" % key, src)
-    with open(os.path.join(d, "vendor", "BufferGeometryUtils.js")) as f:
-        page = page.replace("{{BGU}}", module_to_script(f.read(), "BufferGeometryUtils"))
-    with open(os.path.join(d, "vendor", "GLTFLoader.js")) as f:
-        page = page.replace("{{GLTF}}", module_to_script(f.read(), "GLTFLoaderModule"))
-    # The shell, the layout and the textures: build products of assets/ and data/.
-    with open(os.path.join(ROOT, "assets", "exhibit", "elmorian.glb"), "rb") as f:
-        page = page.replace("{{GLB}}", base64.b64encode(f.read()).decode())
+    # The shell, the layout and the textures: build products of assets/ and
+    # data/. The shell is TEXT, converted from the committed .glb by
+    # tools/glb_to_json.py: a page that embeds a binary model is a page the
+    # artifact share review cannot review. See that script's header.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import glb_to_json
+    shell = glb_to_json.convert(os.path.join(ROOT, "assets", "exhibit", "elmorian.glb"))
+    page = page.replace("{{SHELL}}", json.dumps(shell, separators=(",", ":")))
     with open(os.path.join(ROOT, "data", "layout", "elmorian.json")) as f:
         page = page.replace("{{LAYOUT}}", json.dumps(json.load(f)))
+    with open(os.path.join(ROOT, "data", "tuning.json")) as f:
+        page = page.replace("{{TUNING}}", json.dumps(json.load(f)))
+    with open(os.path.join(ROOT, "data", "materials.json")) as f:
+        page = page.replace("{{MATERIALS}}", json.dumps(json.load(f)))
     page = page.replace("{{TEXTURES}}", textures_json(d))
     out = os.path.join(d, "index.html")
     with open(out, "w") as f:

@@ -23,7 +23,12 @@ const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 await page.goto('file://' + path.join(here, 'index.html'));
-await page.waitForTimeout(1800);
+// Wait on PROGRESS, not on a deadline. The shell is built synchronously from
+// the text payload, so how long the page takes to be ready depends on the
+// machine and on what else is running on it; a fixed pause passed on a quiet
+// box and failed on a busy one, which reads as a broken game and is not one.
+await page.waitForFunction(() => window.ftDebug && window.ftDebug.rig, null, { timeout: 120000 });
+await page.waitForTimeout(400);
 
 let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks++; console.log('  ok  ' + m); };

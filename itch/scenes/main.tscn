@@ -1,0 +1,93 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/main.gd" id="main"]
+[ext_resource type="Script" path="res://src/camera_rig.gd" id="rig"]
+[ext_resource type="Script" path="res://src/light_pool.gd" id="lights"]
+[ext_resource type="Script" path="res://src/audio_bank.gd" id="audio"]
+[ext_resource type="PackedScene" path="res://assets/exhibit/elmorian.glb" id="shell"]
+[ext_resource type="PackedScene" path="res://scenes/exhibit.tscn" id="exhibit"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="hud"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/hall_six.ogg" id="music"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/room_tone.wav" id="tone"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.0157, 0.0235, 0.0392, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.14, 0.19, 0.16, 1)
+ambient_light_energy = 0.18
+tonemap_mode = 3
+tonemap_exposure = 1.0
+fog_enabled = true
+fog_light_color = Color(0.0196, 0.0275, 0.0392, 1)
+fog_light_energy = 1.0
+fog_density = 0.035
+
+[node name="Main" type="Node3D"]
+script = ExtResource("main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Shell" parent="." instance=ExtResource("shell")]
+
+[node name="Exhibit" parent="." instance=ExtResource("exhibit")]
+
+[node name="Lights" type="Node3D" parent="."]
+script = ExtResource("lights")
+
+[node name="Lamp" type="OmniLight3D" parent="Lights"]
+light_color = Color(1, 0.843, 0.639, 1)
+omni_range = 11.0
+
+[node name="Spot0" type="SpotLight3D" parent="Lights"]
+light_color = Color(1, 0.941, 0.816, 1)
+
+[node name="Spot1" type="SpotLight3D" parent="Lights"]
+light_color = Color(1, 0.941, 0.816, 1)
+
+[node name="Spot2" type="SpotLight3D" parent="Lights"]
+light_color = Color(1, 0.941, 0.816, 1)
+
+[node name="Spot3" type="SpotLight3D" parent="Lights"]
+light_color = Color(1, 0.941, 0.816, 1)
+
+[node name="Spot4" type="SpotLight3D" parent="Lights"]
+light_color = Color(1, 0.941, 0.816, 1)
+
+[node name="Door0" type="OmniLight3D" parent="Lights"]
+visible = false
+
+[node name="Door1" type="OmniLight3D" parent="Lights"]
+visible = false
+
+[node name="Way" type="SpotLight3D" parent="Lights"]
+visible = false
+light_color = Color(0.792, 1, 0.847, 1)
+
+[node name="Rig" type="Node3D" parent="."]
+script = ExtResource("rig")
+
+[node name="Camera3D" type="Camera3D" parent="Rig"]
+current = true
+
+[node name="Audio" type="Node" parent="."]
+script = ExtResource("audio")
+
+[node name="Sfx0" type="AudioStreamPlayer" parent="Audio"]
+
+[node name="Sfx1" type="AudioStreamPlayer" parent="Audio"]
+
+[node name="Sfx2" type="AudioStreamPlayer" parent="Audio"]
+
+[node name="Sfx3" type="AudioStreamPlayer" parent="Audio"]
+
+[node name="Music" type="AudioStreamPlayer" parent="Audio"]
+stream = ExtResource("music")
+volume_db = -9.0
+
+[node name="Tone" type="AudioStreamPlayer" parent="Audio"]
+stream = ExtResource("tone")
+volume_db = -6.0
+
+[node name="HUD" parent="." instance=ExtResource("hud")]

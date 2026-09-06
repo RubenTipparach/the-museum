@@ -1,0 +1,143 @@
+name: itch track
+
+# The GDScript web build (docs/ARCHITECTURE.md ADR-14): the puzzle tests
+# headless, every room rendered under xvfb, the Web export, the export booted
+# in headless Chromium, and, on main, the upload to itch.io. Every step
+# delegates to a script in scripts/ so CI and a developer's machine run the
+# identical build (CLAUDE.md 4.1); nothing is built in YAML.
+#
+# Triggers are disjoint so one commit never starts two runs: pull_request
+# covers every branch, push covers main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and verify, but do not upload to itch.io"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Test, export, verify, deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CAN_DEPLOY: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read build config
+        id: config
+        run: |
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          source build.config
+          echo "godot_version=$GODOT_VERSION.$GODOT_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "flavor=$ITCH_GODOT_FLAVOR" >> "$GITHUB_OUTPUT"
+
+      - name: Shell syntax and the config against the presets
+        run: |
+          set -euo pipefail
+          for f in scripts/*.sh scripts/lib/*.sh; do bash -n "$f"; done
+          ./scripts/check-config.sh
+
+      - name: Cache Godot and the web export templates
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tools/godot-standard
+            ~/.local/share/godot/export_templates
+          key: godot-${{ steps.config.outputs.godot_version }}-${{ steps.config.outputs.flavor }}-web
+
+      - name: Install Godot (standard) and the web templates
+        run: ./scripts/install-godot.sh standard
+
+      # The scene test renders under xvfb on Mesa's software GL; installed
+      # explicitly because run-tests.sh skips that test when xvfb is missing,
+      # and a test that quietly skips is worse than one that fails.
+      - name: Install xvfb and Mesa
+        run: sudo apt-get install -y -qq xvfb mesa-utils libgl1-mesa-dri
+
+      - name: Puzzle tests and every room rendered
+        run: ./scripts/run-tests.sh
+
+      - name: Export the web build
+        run: ./scripts/build.sh
+
+      # The harnesses import playwright; package.json declares it and the
+      # lockfile pins it, so the browser installed here matches the package.
+      - name: Install the browser harnesses and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Boot the web build in headless Chromium
+        run: ./scripts/verify-build.sh
+
+      - name: Play the web build to its end
+        run: node itch/tests/playthrough.mjs builds/web
+
+      - name: Upload the build and the frames
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-build-and-frames
+          path: |
+            builds/web
+            docs/reference/itch_*.png
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Install butler
+        if: env.CAN_DEPLOY == 'true'
+        run: ./scripts/install-butler.sh
+
+      - name: Check for itch.io credentials
+        id: creds
+        if: env.CAN_DEPLOY == 'true'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::BUTLER_API_KEY is not set, skipping the itch.io upload."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Gated on main, so a pull request can never publish.
+      - name: Deploy to itch.io
+        if: env.CAN_DEPLOY == 'true' && steps.creds.outputs.present == 'true'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '0' }}
+        run: ./scripts/deploy-itch.sh
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### itch track"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Version | \`$(git describe --tags --dirty 2>/dev/null || echo "r$(git rev-list --count HEAD)-$(git rev-parse --short HEAD)")\` |"
+            echo "| Deployed | ${{ env.CAN_DEPLOY == 'true' && 'yes, if credentials present' || 'no, not main' }} |"
+            echo "| Page | https://ruben-tipparach.itch.io/the-museum |"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,72 @@
+{
+  "_": "Camera, input and animation numbers the exhibit reads (CLAUDE.md 4.4). The prototype's game.js reads this same table, so a number is changed once. Angles in radians, distances in metres, times in milliseconds.",
+  "fov": 62,
+  "near": 0.05,
+  "far": 60,
+  "easeK": 5.5,
+  "orbitSens": 0.0052,
+  "inspectSensScale": 0.6,
+  "pitchMin": -0.35,
+  "pitchMax": 0.62,
+  "distMin": 2.0,
+  "distMax": 3.4,
+  "inspectNudge": 0.22,
+  "tapMs": 450,
+  "tapPx": 9,
+  "wheelStep": 1.08,
+  "nearHit": 0.5,
+  "nearDoorway": 1.2,
+  "portraitExtra": 0.3,
+  "fitMargin": 1.12,
+  "fitPad": 0.3,
+  "fitMin": 1.2,
+  "doorwayStep": 0.9,
+  "queueArrive": 0.25,
+  "ringHover": 2.05,
+  "doorEase": 0.6,
+  "eyeEase": 1.4,
+  "ringEase": 1.6,
+  "shakeSeconds": 0.3,
+  "shakeAmp": 0.03,
+  "padGlow": 0.55,
+  "wrongPadMs": 260,
+  "endCardMs": 1400,
+  "toastMs": 2200,
+  "resetArmMs": 2500,
+  "hud": {
+    "_": "The HUD is laid out for a 390 unit short side; on a large screen the scale is capped so a desktop browser does not get a phone's HUD blown up three times.",
+    "baseSide": 390,
+    "maxScale": 1.4
+  },
+  "lights": {
+    "_": "Godot's own light units for the pool in itch/scenes/main.tscn. The prototype's three.js numbers do not carry across, so these were set by rendering frames (docs/reference/itch_*.png). plaqueSpot and stationSpot are [intensity, cone angle in radians] in the prototype's units, scaled by spot.scale.",
+    "lamp": {
+      "energy": 2.5,
+      "range": 11
+    },
+    "spot": {
+      "range": 12,
+      "penumbra": 0.9,
+      "scale": 0.09
+    },
+    "plaqueSpot": [
+      26,
+      0.52
+    ],
+    "stationSpot": [
+      70,
+      0.8
+    ],
+    "doorLamp": {
+      "energy": 0.8,
+      "range": 1.9
+    },
+    "way": {
+      "energy": 3.0,
+      "range": 9,
+      "angle": 35
+    }
+  },
+  "tapFrames": 4,
+  "_tap": "A touch is a tap if it is released within tapMs, or within tapFrames frames of its press: on a slow renderer a press and its release land in consecutive frames however quick the finger was, and a frame can be longer than tapMs."
+}
