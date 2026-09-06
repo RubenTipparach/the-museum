@@ -31,13 +31,13 @@ export function serve(dir) {
   return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve({ server, url: `http://127.0.0.1:${server.address().port}/` })));
 }
 
-export async function open(dir, { width = 390, height = 844, touch = false } = {}) {
+export async function open(dir, { width = 390, height = 844, touch = false, dpr = 1 } = {}) {
   const { server, url } = await serve(dir);
   const browser = await chromium.launch({
     executablePath: chromiumPath(),
     args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'],
   });
-  const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
+  const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, isMobile: touch, deviceScaleFactor: dpr });
   const page = await context.newPage();
   const log = [];
   page.on('console', m => log.push(m.text()));
