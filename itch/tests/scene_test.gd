@@ -48,6 +48,34 @@ func _run() -> void:
 			if mat and mat is StandardMaterial3D and (mat.albedo_texture or mat.emission_enabled or mat.albedo_color != Color.WHITE):
 				lit += 1
 	ok(lit >= 100, "%d shell surfaces wear a role material" % lit)
+	# Which way a drag turns you is a sign, and a sign nobody can see is a sign
+	# that flips silently. So it is measured rather than asserted: pick a thing
+	# in view, drag right, and read where it went. In a room the room follows
+	# the finger, so its screen x RISES. Inspect is the opposite sign and is
+	# checked too, because the two are set in the same function and getting
+	# one right by breaking the other is exactly the failure to catch.
+	main.go_room(1, true)
+	await _settle()
+	var mark: Node3D = null
+	for b in main.bodies:
+		if String(b.get_meta("kind")) == "plaque" and String(b.get_meta("id")) == "gaze":
+			mark = b
+			break
+	var before: float = main.rig.camera.unproject_position(Interaction.centre_of(mark)).x
+	main.rig.orbit(60.0, 0.0)
+	await _settle()
+	var after: float = main.rig.camera.unproject_position(Interaction.centre_of(mark)).x
+	ok(after > before + 20.0,
+	   "in a room, the room follows the finger: dragging right carries it right (%d to %d)" % [before, after])
+	main.go_station("gaze")
+	await _settle()
+	var i_before: float = main.rig.goal["yaw"]
+	main.rig.orbit(60.0, 0.0)
+	await _settle()
+	ok(main.rig.goal["yaw"] < i_before, "and inspect still nudges the other way, unchanged")
+	main.leave_inspect()
+	await _settle()
+
 	# every room, instantly, then a frame each
 	var names := ["forecourt", "gaze", "stack", "speech", "sixfold", "ancestor"]
 	for r in 6:
