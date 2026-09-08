@@ -97,7 +97,14 @@ func leave(view: Dictionary) -> void:
 func orbit(dx: float, dy: float) -> void:
 	var s := float(T["orbitSens"])
 	if mode == "room":
-		goal["yaw"] -= dx * s
+		# Standing in a room, the ROOM follows the finger: drag right and the
+		# wall you are looking at slides right with your thumb, so the view
+		# turns left. That is the drag half of a touch look, and it is the
+		# opposite sign to inspect below, which nudges the view rather than
+		# the object. Measured, not asserted: scene_test drags right and
+		# reads where a plaque went, because a sign nobody can see is a sign
+		# that flips silently.
+		goal["yaw"] += dx * s
 		goal["pitch"] = clampf(goal["pitch"] + dy * s, float(T["pitchMin"]), float(T["pitchMax"]))
 	else:
 		var n := float(T["inspectNudge"])

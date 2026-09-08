@@ -999,7 +999,10 @@ window.LORE = {"hall": "Hall Six", "arch": {"title": "The Elmorians: Drinkers of
     if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > T.tapPx) drag.moved = true;
     if (!drag.moved) return;
     if (rig.mode === 'room') {
-      rig.goal.yaw -= dx * T.orbitSens; rig.goal.pitch = Math.max(T.pitchMin, Math.min(T.pitchMax, rig.goal.pitch + dy * T.orbitSens));
+      // In a room the ROOM follows the finger: drag right and the wall slides
+      // right with your thumb, so the view turns left. Opposite sign to the
+      // inspect branch, which nudges the view rather than the object.
+      rig.goal.yaw += dx * T.orbitSens; rig.goal.pitch = Math.max(T.pitchMin, Math.min(T.pitchMax, rig.goal.pitch + dy * T.orbitSens));
     } else {
       rig.goal.yaw = Math.max(rig.anchorYaw - T.inspectNudge, Math.min(rig.anchorYaw + T.inspectNudge, rig.goal.yaw - dx * T.orbitSens * 0.6));
       rig.goal.pitch = Math.max(rig.anchorPitch - T.inspectNudge, Math.min(rig.anchorPitch + T.inspectNudge, rig.goal.pitch + dy * T.orbitSens * 0.6));
